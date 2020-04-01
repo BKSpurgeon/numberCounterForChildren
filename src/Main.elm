@@ -8,13 +8,16 @@ import Html.Events exposing (onClick)
 import List exposing (head, map, range)
 import Random
 import Random.List exposing (shuffle)
-
+import List.Extra exposing (groupsOf)
 
 
 {-
    To do:
 
        (1) Fix the game state. After you finish the game you can't simply reset it.
+       (2) Master piping operations. |> and <| till you are completely comfortable with it.
+       (3) Fix the problem of splitting lists into rows and displaying them:
+       	   https://stackoverflow.com/questions/37361229/elm-split-list-into-multiple-lists
 -}
 ---- MODEL ----
 
@@ -42,7 +45,8 @@ startingNumber : Int
 startingNumber = 1
 
 endingNumber : Int
-endingNumber = 5
+endingNumber = 35
+
 
 ---- UPDATE ----
 
@@ -113,7 +117,7 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div [class "container"]
+    div []
         (instructions
             ++ [showButtons model]
             ++ [ h1 [] [ text ("Timer: " ++ String.fromFloat model.timer) ]
@@ -130,31 +134,31 @@ view model =
 instructions : List (Html Msg)
 instructions =
     [ h1 [] [ text "The Number Game:" ]
-    , p [] [ text "Click on 1 through to 50 as fast as you can!" ]
+    , p [] [ text "Click from 1 through to 50 as fast as you can!" ]
     , hr [] []
     ]
 
 showButtons : Model -> Html Msg
 showButtons model =
-    div [class "row"] (model.numbers |> List.map (\x -> showButton x model.currentNumber))
+    div [class "container"] ( (List.Extra.groupsOf 4  <| model.numbers)  |> List.map (\x -> showButtonRow model x))
 
 
 showButtonRow : Model -> List Int -> Html Msg
 showButtonRow model list =
-    div [] (List.map (\x -> showButton x model.currentNumber) list )
+    div [class "row"] (List.map (\x -> showButton x model.currentNumber) list )  
 
 showButton : Int -> Int -> Html Msg
 showButton buttonNumber currentNumber =
     let
         highlightCurrentButton =
             if buttonNumber == currentNumber then
-                "btn btn-danger"
+                "btn btn-danger col-3"
 
             else if buttonNumber == startingNumber && currentNumber == 0 then
-                "btn btn-success"
+                "btn btn-success col-3"
 
             else
-                "btn btn-secondary"
+                "btn btn-light col-3"
     in
     button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ]
 
