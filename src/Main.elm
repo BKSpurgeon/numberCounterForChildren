@@ -2,33 +2,38 @@ module Main exposing (..)
 
 import Browser
 import Browser.Events exposing (onAnimationFrameDelta)
-import Html exposing (Html, text, div, h1, button, hr, p)
-import Html.Attributes exposing (src, class)
+import Html exposing (Html, button, div, h1, hr, p, text)
+import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
+import List exposing (head, map, range)
+
 
 
 {-
-To do:
+   To do:
 
-    (1) Add an effect if the correct button is pressed
+       (1) Add an effect if the correct button is pressed
 
 -}
 ---- MODEL ----
 
+
 type alias Model =
-    {count : Float
+    { count : Float
     , gameOn : Bool
-    , currentNumber : Int    
+    , currentNumber : Int
     }
 
 
 initialModel : Model
 initialModel =
-    {count = 0, gameOn = False, currentNumber = 0}
+    { count = 0, gameOn = False, currentNumber = 0 }
+
 
 init : ( Model, Cmd Msg )
 init =
     ( initialModel, Cmd.none )
+
 
 
 ---- UPDATE ----
@@ -37,7 +42,7 @@ init =
 type Msg
     = NoOp
     | Frame Float
-    | GameState 
+    | GameState
     | NumberPress Int
 
 
@@ -45,55 +50,90 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NoOp ->
-          ( model, Cmd.none )
+            ( model, Cmd.none )
+
         Frame float ->
-            ( {model | count = model.count + 1}, Cmd.none )
+            ( { model | count = model.count + 1 }, Cmd.none )
+
         GameState ->
             ( initialModel, Cmd.none )
-        NumberPress number->
+
+        NumberPress number ->
             let
-              startGame = model.currentNumber == 0 && number == 1
-              newNumber = if number == (model.currentNumber + 1)
-                            then 
-                                model.currentNumber + 1
-                            else 
-                                model.currentNumber
-              newSubs     = if model.gameOn == False && startGame
-                            then 
-                                True
-                            else 
-                                model.gameOn
-            in                
-            ( {model | currentNumber = newNumber, gameOn = newSubs}, Cmd.none  )
+                startGame =
+                    model.currentNumber == 0 && number == 1
+
+                newNumber =
+                    if number == (model.currentNumber + 1) then
+                        model.currentNumber + 1
+
+                    else
+                        model.currentNumber
+
+                newSubs =
+                    if model.gameOn == False && startGame then
+                        True
+
+                    else
+                        model.gameOn
+            in
+            ( { model | currentNumber = newNumber, gameOn = newSubs }, Cmd.none )
+
 
 
 ---- SUBSCRIPTIONS ----
 
-subscriptions model = 
-    if model.gameOn
-    then onAnimationFrameDelta Frame
-    else Sub.none
 
-    
+subscriptions model =
+    if model.gameOn then
+        onAnimationFrameDelta Frame
+
+    else
+        Sub.none
+
+
 
 ---- VIEW ----
 
 
 view : Model -> Html Msg
-view model =        
-    div [ ]
-        [ h1 [] [text "The Number Game:"] 
-        , p [] [text "Instructions: Click on 1 till the end as fast as you can! See if you can beat your friends!"]
-        , button [ class "btn btn-primary", onClick GameState ] [ text "Reset Game" ]             
-        , hr [] []
-        , h1 [] [ text ("Current Number:" ++ String.fromInt model.currentNumber) ]   
-        , h1 [] [ text ("Timer: " ++ String.fromFloat model.count)]              
-        , button [ class "btn btn-danger", onClick (NumberPress 1) ] [ text "1" ]     
-        , button [ class "btn btn-info", onClick (NumberPress 2) ] [ text "2" ] 
-        , button [ class "btn btn-info", onClick (NumberPress 3) ] [ text "3" ] 
-        , button [ class "btn btn-info", onClick (NumberPress 4) ] [ text "4" ] 
-        , button [ class "btn btn-info", onClick (NumberPress 5) ] [ text "5" ] 
-        ]
+view model =
+    div []
+        (instructions
+            ++ (range 1 5 |> List.map (\x -> showButton x model.currentNumber))
+            ++ [ h1 [] [ text ("Timer: " ++ String.fromFloat model.count) ]
+               , hr [] []
+               , if model.gameOn then
+                    button [ class "btn btn-primary", onClick GameState ] [ text "Reset Game" ]
+
+                 else
+                    text ""
+               ]
+        )
+
+
+instructions : List (Html Msg)
+instructions =
+    [ h1 [] [ text "The Number Game:" ]
+    , p [] [ text "Click on 1 through to 50 as fast as you can!" ]
+    , hr [] []
+    ]
+
+
+showButton : Int -> Int -> Html Msg
+showButton buttonNumber currentNumber =
+    let
+        highlightCurrentButton =
+            if buttonNumber == currentNumber then
+                "btn btn-danger"
+
+            else if buttonNumber == 1 && currentNumber == 0 then
+                "btn btn-success"
+
+            else
+                "btn btn-secondary"
+    in
+    button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ]
 
 
 
