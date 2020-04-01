@@ -34,17 +34,20 @@ init : ( Model, Cmd Msg )
 init =
     ( initialModel, Cmd.none )
 
-
-
 ---- UPDATE ----
 
 
 type Msg
     = NoOp
     | Frame Float
-    | GameState
+    | ResetGame
     | NumberPress Int
 
+
+type GameState 
+    = Begin
+    | Running
+    | End
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -55,7 +58,7 @@ update msg model =
         Frame float ->
             ( { model | count = model.count + 1 }, Cmd.none )
 
-        GameState ->
+        ResetGame ->
             ( initialModel, Cmd.none )
 
         NumberPress number ->
@@ -73,7 +76,8 @@ update msg model =
                 newSubs =
                     if model.gameOn == False && startGame then
                         True
-
+                    else if number == 5 && model.currentNumber == 4
+                    then False
                     else
                         model.gameOn
             in
@@ -87,11 +91,8 @@ update msg model =
 subscriptions model =
     if model.gameOn then
         onAnimationFrameDelta Frame
-
     else
         Sub.none
-
-
 
 ---- VIEW ----
 
@@ -104,7 +105,7 @@ view model =
             ++ [ h1 [] [ text ("Timer: " ++ String.fromFloat model.count) ]
                , hr [] []
                , if model.gameOn then
-                    button [ class "btn btn-primary", onClick GameState ] [ text "Reset Game" ]
+                    button [ class "btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
 
                  else
                     text ""
