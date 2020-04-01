@@ -14,7 +14,7 @@ import Random.List exposing (shuffle)
 {-
    To do:
 
-       (1) Add an effect if the correct button is pressed
+       (1) Fix the game state. After you finish the game you can't simply reset it.
 -}
 ---- MODEL ----
 
@@ -42,7 +42,7 @@ startingNumber : Int
 startingNumber = 1
 
 endingNumber : Int
-endingNumber = 15
+endingNumber = 5
 
 ---- UPDATE ----
 
@@ -113,9 +113,9 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div []
+    div [class "container"]
         (instructions
-            ++ (model.numbers |> List.map (\x -> showButton x model.currentNumber))
+            ++ [showButtons model]
             ++ [ h1 [] [ text ("Timer: " ++ String.fromFloat model.timer) ]
                , hr [] []
                , if model.currentNumber /= startingNumber - 1 then
@@ -134,6 +134,14 @@ instructions =
     , hr [] []
     ]
 
+showButtons : Model -> Html Msg
+showButtons model =
+    div [class "row"] (model.numbers |> List.map (\x -> showButton x model.currentNumber))
+
+
+showButtonRow : Model -> List Int -> Html Msg
+showButtonRow model list =
+    div [] (List.map (\x -> showButton x model.currentNumber) list )
 
 showButton : Int -> Int -> Html Msg
 showButton buttonNumber currentNumber =
