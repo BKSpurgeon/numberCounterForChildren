@@ -18,6 +18,9 @@ import List.Extra exposing (groupsOf)
        (2) Master piping operations. |> and <| till you are completely comfortable with it.
        (3) Fix the problem of splitting lists into rows and displaying them:
        	   https://stackoverflow.com/questions/37361229/elm-split-list-into-multiple-lists
+       (4) Fix the layout: we'd like everything a little more square
+           Understanding bootstrap: https://medium.com/wdstack/bootstrap-equal-height-columns-d07bc934eb27
+       	   
 -}
 ---- MODEL ----
 
@@ -45,7 +48,7 @@ startingNumber : Int
 startingNumber = 1
 
 endingNumber : Int
-endingNumber = 35
+endingNumber = 28
 
 
 ---- UPDATE ----
@@ -74,7 +77,7 @@ update msg model =
             ( { model | timer = model.timer + 1 }, Cmd.none )
 
         ResetGame ->
-            ( initialModel, Cmd.none )
+            init
 
         NumberPress number ->
             let
@@ -145,7 +148,7 @@ showButtons model =
 
 showButtonRow : Model -> List Int -> Html Msg
 showButtonRow model list =
-    div [class "row"] (List.map (\x -> showButton x model.currentNumber) list )  
+    div [class "row display-flex"] (List.map (\x -> showButton x model.currentNumber) list )  
 
 showButton : Int -> Int -> Html Msg
 showButton buttonNumber currentNumber =
