@@ -9,7 +9,7 @@ import List exposing (head, map, range)
 import Random
 import Random.List exposing (shuffle)
 import List.Extra exposing (groupsOf)
-
+import List exposing (..)
 
 {-
    To do:
@@ -48,8 +48,7 @@ startingNumber : Int
 startingNumber = 1
 
 endingNumber : Int
-endingNumber = 4
-
+endingNumber = 6
 
 ---- UPDATE ----
 
@@ -138,9 +137,15 @@ instructions =
     , hr [] []
     ]
 
+split : Int -> List a -> List (List a)
+split i list =
+  case take i list of
+    [] -> []
+    listHead -> listHead :: split i (drop i list)
+
 showButtons : Model -> Html Msg
 showButtons model =
-    div [class "container"] ( (List.Extra.groupsOf 4  <| model.numbers)  |> List.map (\x -> showButtonRow model x))
+    div [class "container"] ( (split 4  <| model.numbers)  |> List.map (\x -> showButtonRow model x))
 
 
 showButtonRow : Model -> List Int -> Html Msg
