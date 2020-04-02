@@ -19,8 +19,12 @@ import List exposing (..)
        	   https://stackoverflow.com/questions/37361229/elm-split-list-into-multiple-lists
        (4) Fix the layout: we'd like everything a little more square
            Understanding bootstrap: https://medium.com/wdstack/bootstrap-equal-height-columns-d07bc934eb27
+           also see here: https://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all-the-same-height#comment56504018_19695851
+           https://stackoverflow.com/questions/20456694/grid-of-responsive-squares
+           https://stackoverflow.com/a/49692667/4880924
        (5) do testing in elm
-       (6) fix the styling       	   
+       (6) fix the styling  
+       (7) fix the timer     	   
 -}
 ---- MODEL ----
 
@@ -48,7 +52,7 @@ startingNumber : Int
 startingNumber = 1
 
 endingNumber : Int
-endingNumber = 6
+endingNumber = 12
 
 ---- UPDATE ----
 
@@ -150,24 +154,29 @@ showButtons model =
 
 showButtonRow : Model -> List Int -> Html Msg
 showButtonRow model list =
-    div [class "row display-flex"] (List.map (\x -> showButton x model.currentNumber) list )  
+    div [class "row"] (List.map (\x -> showButton x model.currentNumber) list )  
 
 showButton : Int -> Int -> Html Msg
 showButton buttonNumber currentNumber =
     let
         highlightCurrentButton =
             if buttonNumber == currentNumber then
-                "btn btn-danger col-3"
-
+                "btn btn-danger"
             else if buttonNumber == startingNumber && currentNumber == 0 then
-                "btn btn-success col-3"
-
+                "btn btn-success"
             else if buttonNumber < currentNumber then
-                "btn btn-link col-3"
+                "btn btn-link"
             else
-                "btn btn-light col-3"
-    in
-    button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ]
+                "btn btn-light"
+    in    
+        div [class "col-lg-2 col-md-3 col-6"] 
+            [div [class "box"] [button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ]]] 
+        
+        
+    
+            
+        
+    
 
 
 

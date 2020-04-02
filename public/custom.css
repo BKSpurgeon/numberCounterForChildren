@@ -1,8 +1,8 @@
-.row.display-flex {
-  display: flex;
-  flex-wrap: wrap;
+.box {   
+   border-radius: 4px;
+   padding-bottom: 100%;
 }
-.row.display-flex > [class*='col-'] {
-  display: flex;
-  flex-direction: column;
+
+.col-lg-2, .col-md-3, .col-xs-6{
+    margin-top: 10px !important;
 }
