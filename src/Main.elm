@@ -13,8 +13,7 @@ import List.Extra exposing (groupsOf)
 
 {-
    To do:
-
-       (1) Fix the game state. After you finish the game you can't simply reset it.
+       
        (2) Master piping operations. |> and <| till you are completely comfortable with it.
        (3) Fix the problem of splitting lists into rows and displaying them:
        	   https://stackoverflow.com/questions/37361229/elm-split-list-into-multiple-lists
@@ -28,7 +27,7 @@ import List.Extra exposing (groupsOf)
 
 type alias Model =
     { timer : Float
-    , gameOn : GameState
+    , gameState : GameState
     , currentNumber : Int
     , numbers : List Int
     }
@@ -36,7 +35,7 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { timer = 0, gameOn = NotStarted, currentNumber = 0, numbers = [] }
+    { timer = 0, gameState = NotStarted, currentNumber = 0, numbers = [] }
 
 
 init : ( Model, Cmd Msg )
@@ -90,14 +89,14 @@ update msg model =
                         model.currentNumber
 
                 newSubs =
-                    if model.gameOn == NotStarted then
+                    if model.gameState == NotStarted then
                         Running
                     else if number == endingNumber && model.currentNumber == (endingNumber - 1 )then 
                         End
                     else
-                        model.gameOn
+                        model.gameState
             in
-            ( { model | currentNumber = newNumber, gameOn = newSubs }, Cmd.none )
+            ( { model | currentNumber = newNumber, gameState = newSubs }, Cmd.none )
 
         RandomizeNumbers numbers ->
             ({model | numbers = numbers}, Cmd.none )
@@ -108,7 +107,7 @@ update msg model =
 
 
 subscriptions model =
-    if model.gameOn == Running then
+    if model.gameState == Running then
         onAnimationFrameDelta Frame
     else
         Sub.none
@@ -123,7 +122,7 @@ view model =
             ++ [showButtons model]
             ++ [ h1 [] [ text ("Timer: " ++ String.fromFloat model.timer) ]
                , hr [] []
-               , if model.gameOn /= NotStarted then
+               , if model.gameState /= NotStarted then
                     button [ class "btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
 
                  else
