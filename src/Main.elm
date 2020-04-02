@@ -10,6 +10,7 @@ import Random
 import Random.List exposing (shuffle)
 import List.Extra exposing (groupsOf)
 import List exposing (..)
+import Time
 
 {-
    To do:
@@ -22,6 +23,7 @@ import List exposing (..)
            also see here: https://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all-the-same-height#comment56504018_19695851
            https://stackoverflow.com/questions/20456694/grid-of-responsive-squares
            https://stackoverflow.com/a/49692667/4880924
+           Adding a display flex will change the height stretchability of the item: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox i.e.  If some items are taller than others, all items will stretch along the cross axis to fill its full size.
        (5) do testing in elm
        (6) fix the styling  
        (7) fix the timer     	   
@@ -30,7 +32,7 @@ import List exposing (..)
 
 
 type alias Model =
-    { timer : Float
+    { timer : Time.Posix
     , gameState : GameState
     , currentNumber : Int
     , numbers : List Int
@@ -39,7 +41,7 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { timer = 0, gameState = NotStarted, currentNumber = 0, numbers = [] }
+    { timer = (Time.millisToPosix 0), gameState = NotStarted, currentNumber = 0, numbers = [] }
 
 
 init : ( Model, Cmd Msg )
@@ -52,14 +54,14 @@ startingNumber : Int
 startingNumber = 1
 
 endingNumber : Int
-endingNumber = 12
+endingNumber = 36
 
 ---- UPDATE ----
 
 
 type Msg
     = NoOp
-    | Frame Float
+    | Tick Time.Posix
     | ResetGame
     | NumberPress Int
     | RandomizeNumbers (List Int)
@@ -76,8 +78,8 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
-        Frame float ->
-            ( { model | timer = model.timer + 1 }, Cmd.none )
+        Tick newTime ->
+            ( { model | timer = newTime }, Cmd.none )
 
         ResetGame ->
             init
@@ -111,7 +113,7 @@ update msg model =
 
 subscriptions model =
     if model.gameState == Running then
-        onAnimationFrameDelta Frame
+        Time.every 1000 Tick
     else
         Sub.none
 
@@ -120,6 +122,12 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
+    let
+        second = String.fromInt (Time.toSecond utc model.zone model.time)
+        minute = String.fromInt (Time.toMinute utc model.zone model.time)
+        millisecond = String.fromInt (Time.toMillis utc model.zone model.time)
+    in
+
     div []
         (instructions
             ++ [showButtons model]
@@ -127,7 +135,6 @@ view model =
                , hr [] []
                , if model.gameState /= NotStarted then
                     button [ class "btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
-
                  else
                     text ""
                ]
@@ -137,7 +144,7 @@ view model =
 instructions : List (Html Msg)
 instructions =
     [ h1 [] [ text "The Number Game:" ]
-    , p [] [ text "Click from 1 through to 50 as fast as you can!" ]
+    , p [] [ text ("Click from 1 through to " ++ String.fromInt(endingNumber) ++ " as fast as you can!") ]
     , hr [] []
     ]
 
@@ -161,24 +168,17 @@ showButton buttonNumber currentNumber =
     let
         highlightCurrentButton =
             if buttonNumber == currentNumber then
-                "btn btn-danger"
+                "btn-block btn btn-danger"
             else if buttonNumber == startingNumber && currentNumber == 0 then
-                "btn btn-success"
+                "btn-block btn btn-success"
             else if buttonNumber < currentNumber then
-                "btn btn-link"
+                "btn-block btn btn-link"
             else
-                "btn btn-light"
+                "btn-block btn btn-light"
     in    
-        div [class "col-lg-2 col-md-3 col-6"] 
-            [div [class "box"] [button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ]]] 
+        div [class "col-3"] 
+            [button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ]]
         
-        
-    
-            
-        
-    
-
-
 
 ---- PROGRAM ----
 
