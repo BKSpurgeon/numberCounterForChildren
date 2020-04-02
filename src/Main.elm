@@ -162,6 +162,8 @@ showButton buttonNumber currentNumber =
             else if buttonNumber == startingNumber && currentNumber == 0 then
                 "btn btn-success col-3"
 
+            else if buttonNumber < currentNumber then
+                "btn btn-link col-3"
             else
                 "btn btn-light col-3"
     in
