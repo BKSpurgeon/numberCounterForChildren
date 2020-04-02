@@ -20,14 +20,15 @@ import List.Extra exposing (groupsOf)
        	   https://stackoverflow.com/questions/37361229/elm-split-list-into-multiple-lists
        (4) Fix the layout: we'd like everything a little more square
            Understanding bootstrap: https://medium.com/wdstack/bootstrap-equal-height-columns-d07bc934eb27
-       	   
+       (5) do testing in elm
+       (6) fix the styling       	   
 -}
 ---- MODEL ----
 
 
 type alias Model =
     { timer : Float
-    , gameOn : Bool
+    , gameOn : GameState
     , currentNumber : Int
     , numbers : List Int
     }
@@ -35,7 +36,7 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { timer = 0, gameOn = False, currentNumber = 0, numbers = [] }
+    { timer = 0, gameOn = NotStarted, currentNumber = 0, numbers = [] }
 
 
 init : ( Model, Cmd Msg )
@@ -48,7 +49,7 @@ startingNumber : Int
 startingNumber = 1
 
 endingNumber : Int
-endingNumber = 28
+endingNumber = 4
 
 
 ---- UPDATE ----
@@ -63,7 +64,7 @@ type Msg
 
 
 type GameState 
-    = Begin
+    = NotStarted
     | Running
     | End
 
@@ -81,9 +82,6 @@ update msg model =
 
         NumberPress number ->
             let
-                startGame =
-                    model.currentNumber == 0 && number == 1
-
                 newNumber =
                     if number == (model.currentNumber + 1) then
                         model.currentNumber + 1
@@ -92,10 +90,10 @@ update msg model =
                         model.currentNumber
 
                 newSubs =
-                    if model.gameOn == False && startGame then
-                        True
+                    if model.gameOn == NotStarted then
+                        Running
                     else if number == endingNumber && model.currentNumber == (endingNumber - 1 )then 
-                        False
+                        End
                     else
                         model.gameOn
             in
@@ -110,7 +108,7 @@ update msg model =
 
 
 subscriptions model =
-    if model.gameOn then
+    if model.gameOn == Running then
         onAnimationFrameDelta Frame
     else
         Sub.none
@@ -125,7 +123,7 @@ view model =
             ++ [showButtons model]
             ++ [ h1 [] [ text ("Timer: " ++ String.fromFloat model.timer) ]
                , hr [] []
-               , if model.currentNumber /= startingNumber - 1 then
+               , if model.gameOn /= NotStarted then
                     button [ class "btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
 
                  else
