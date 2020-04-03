@@ -12,6 +12,7 @@ import List.Extra exposing (groupsOf)
 import List exposing (..)
 import Time
 
+
 {-
    To do:
        
@@ -32,7 +33,7 @@ import Time
 
 
 type alias Model =
-    { timer : Time.Posix
+    { timer : Float
     , gameState : GameState
     , currentNumber : Int
     , numbers : List Int
@@ -41,7 +42,7 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { timer = (Time.millisToPosix 0), gameState = NotStarted, currentNumber = 0, numbers = [] }
+    { timer = 0, gameState = NotStarted, currentNumber = 0, numbers = [] }
 
 
 init : ( Model, Cmd Msg )
@@ -79,7 +80,7 @@ update msg model =
             ( model, Cmd.none )
 
         Tick newTime ->
-            ( { model | timer = newTime }, Cmd.none )
+            ( { model | timer = model.timer + 1.0 }, Cmd.none )
 
         ResetGame ->
             init
@@ -113,7 +114,7 @@ update msg model =
 
 subscriptions model =
     if model.gameState == Running then
-        Time.every 1000 Tick
+        Time.every 100 Tick
     else
         Sub.none
 
@@ -123,15 +124,17 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     let
-        second = String.fromInt (Time.toSecond utc model.zone model.time)
-        minute = String.fromInt (Time.toMinute utc model.zone model.time)
-        millisecond = String.fromInt (Time.toMillis utc model.zone model.time)
+        timerString = String.fromFloat (model.timer / 10)      
+        formattedTimerString =  if not (String.contains "." timerString) then
+                                   timerString ++ ".0"
+                                else
+                                    timerString
     in
-
+        
     div []
         (instructions
             ++ [showButtons model]
-            ++ [ h1 [] [ text ("Timer: " ++ String.fromFloat model.timer) ]
+            ++ [ h1 [] [ text ("Timer: " ++ formattedTimerString) ]
                , hr [] []
                , if model.gameState /= NotStarted then
                     button [ class "btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
