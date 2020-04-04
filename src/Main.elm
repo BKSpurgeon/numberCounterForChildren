@@ -96,7 +96,7 @@ update msg model =
                         model.currentNumber
 
                 newSubs =
-                    if model.gameState == NotStarted then
+                    if model.gameState == NotStarted && number == startingNumber then
                         Running
                     else if number == endingNumber && model.currentNumber == (endingNumber - 1 )then 
                         End
