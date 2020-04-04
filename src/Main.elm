@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Browser.Events exposing (onAnimationFrameDelta)
-import Html exposing (Html, button, div, h1, hr, p, text)
+import Html exposing (Html, button, div, h1, hr, p, text, br)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
 import List exposing (head, map, range)
@@ -123,7 +123,45 @@ subscriptions model =
 
 
 view : Model -> Html Msg
-view model =
+view model =        
+    div [class "container"]
+        [ instructions
+        , showButtons model 
+        , timer model
+        , resetButton model
+        ]
+
+
+
+
+resetButton : Model -> Html Msg
+resetButton model =
+    div [class "row"]
+        [ br [ class "row"] []
+        , hr [] []
+        , if model.gameState /= NotStarted then
+                    button [ class "col-12 btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
+                 else
+                    text ""
+        ]
+
+{-
+
+
+               , 
+               ]
+-}
+
+instructions : Html Msg
+instructions =    
+    div [class "row"]
+        [ h1 [class "col-12"] [ text "The Number Game:" ]
+        , p [class "col-12"] [ text ("Click from 1 through to " ++ String.fromInt(endingNumber) ++ " as fast as you can!") ]
+        , hr [] []
+        ]
+
+timer : Model -> Html Msg
+timer model = 
     let
         timerString = String.fromFloat (model.timer / 10)      
         formattedTimerString =  if not (String.contains "." timerString) then
@@ -131,26 +169,7 @@ view model =
                                 else
                                     timerString
     in
-        
-    div []
-        (instructions
-            ++ [showButtons model]
-            ++ [ h1 [] [ text ("Timer: " ++ formattedTimerString) ]
-               , hr [] []
-               , if model.gameState /= NotStarted then
-                    button [ class "btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
-                 else
-                    text ""
-               ]
-        )
-
-
-instructions : List (Html Msg)
-instructions =
-    [ h1 [] [ text "The Number Game:" ]
-    , p [] [ text ("Click from 1 through to " ++ String.fromInt(endingNumber) ++ " as fast as you can!") ]
-    , hr [] []
-    ]
+    h1 [] [ text ("Timer: " ++ formattedTimerString) ]
 
 split : Int -> List a -> List (List a)
 split i list =
@@ -160,7 +179,7 @@ split i list =
 
 showButtons : Model -> Html Msg
 showButtons model =
-    div [class "container"] ( (split 6  <| model.numbers)  |> List.map (\x -> showButtonRow model x))
+    div [] ( (split 6  <| model.numbers)  |> List.map (\x -> showButtonRow model x))
 
 
 showButtonRow : Model -> List Int -> Html Msg
@@ -172,13 +191,13 @@ showButton buttonNumber currentNumber =
     let
         highlightCurrentButton =
             if buttonNumber == currentNumber then
-                "btn-outline-dark btn-block btn btn-danger "
+                "btn-outline-dark btn-block game-btn btn btn-danger "
             else if buttonNumber == startingNumber && currentNumber == 0 then
-                "btn-outline-dark btn-block btn btn-success"
+                "btn-outline-dark btn-block game-btn btn btn-success"
             else if buttonNumber < currentNumber then
-                "btn-outline-dark btn-block btn btn-secondary"
+                "btn-outline-dark btn-block game-btn btn btn-secondary"
             else
-                "btn-outline-dark btn-block btn btn-light"
+                "btn-outline-dark btn-block game-btn btn btn-light"
     in    
         div [class "col-2 d-flex justify-content-center align-items-center"] 
             [button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ]]
