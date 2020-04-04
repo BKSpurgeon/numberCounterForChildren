@@ -159,7 +159,7 @@ split i list =
 
 showButtons : Model -> Html Msg
 showButtons model =
-    div [class "container"] ( (split 4  <| model.numbers)  |> List.map (\x -> showButtonRow model x))
+    div [class "container"] ( (split 6  <| model.numbers)  |> List.map (\x -> showButtonRow model x))
 
 
 showButtonRow : Model -> List Int -> Html Msg
@@ -171,7 +171,7 @@ showButton buttonNumber currentNumber =
     let
         highlightCurrentButton =
             if buttonNumber == currentNumber then
-                "btn-block btn btn-danger"
+                "btn-block btn btn-danger "
             else if buttonNumber == startingNumber && currentNumber == 0 then
                 "btn-block btn btn-success"
             else if buttonNumber < currentNumber then
@@ -179,7 +179,7 @@ showButton buttonNumber currentNumber =
             else
                 "btn-block btn btn-light"
     in    
-        div [class "col-3 d-flex justify-content-center align-items-center"] 
+        div [class "col-2 d-flex justify-content-center align-items-center"] 
             [button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ]]
         
 
