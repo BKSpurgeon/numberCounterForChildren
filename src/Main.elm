@@ -179,7 +179,7 @@ showButton buttonNumber currentNumber =
             else
                 "btn-block btn btn-light"
     in    
-        div [class "col-3"] 
+        div [class "col-3 d-flex justify-content-center align-items-center"] 
             [button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ]]
         
 
