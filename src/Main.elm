@@ -171,13 +171,13 @@ showButton buttonNumber currentNumber =
     let
         highlightCurrentButton =
             if buttonNumber == currentNumber then
-                "btn-block btn btn-danger "
+                "btn-outline-dark btn-block btn btn-danger "
             else if buttonNumber == startingNumber && currentNumber == 0 then
-                "btn-block btn btn-success"
+                "btn-outline-dark btn-block btn btn-success"
             else if buttonNumber < currentNumber then
-                "btn-block btn btn-link"
+                "btn-outline-dark btn-block btn btn-link"
             else
-                "btn-block btn btn-light"
+                "btn-outline-dark btn-block btn btn-light"
     in    
         div [class "col-2 d-flex justify-content-center align-items-center"] 
             [button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ]]
