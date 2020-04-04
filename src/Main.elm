@@ -2,20 +2,20 @@ module Main exposing (..)
 
 import Browser
 import Browser.Events exposing (onAnimationFrameDelta)
-import Html exposing (Html, button, div, h1, hr, p, text, br)
+import Html exposing (Html, br, button, div, h1, hr, p, text)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
-import List exposing (head, map, range)
+import List exposing (..)
+import List.Extra exposing (groupsOf)
 import Random
 import Random.List exposing (shuffle)
-import List.Extra exposing (groupsOf)
-import List exposing (..)
 import Time
+
 
 
 {-
    To do:
-       
+
        (2) Master piping operations. |> and <| till you are completely comfortable with it.
        (3) Fix the problem of splitting lists into rows and displaying them:
        	   https://stackoverflow.com/questions/37361229/elm-split-list-into-multiple-lists
@@ -26,9 +26,9 @@ import Time
            https://stackoverflow.com/a/49692667/4880924
            Adding a display flex will change the height stretchability of the item: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox i.e.  If some items are taller than others, all items will stretch along the cross axis to fill its full size.
        (5) do testing in elm
-       (6) fix the styling  
-       (7) fix the timer     
-       (8) Fix bug: timer should only start when the correct number is pressed.	   
+       (6) fix the styling
+       (7) fix the timer
+       (8) Fix bug: timer should only start when the correct number is pressed.
 -}
 ---- MODEL ----
 
@@ -48,15 +48,23 @@ initialModel =
 
 init : ( Model, Cmd Msg )
 init =
-    ( initialModel, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber) ) )
+    ( initialModel, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
+
+
 
 ---- Configuration ----
 
+
 startingNumber : Int
-startingNumber = 1
+startingNumber =
+    1
+
 
 endingNumber : Int
-endingNumber = 30
+endingNumber =
+    30
+
+
 
 ---- UPDATE ----
 
@@ -69,10 +77,11 @@ type Msg
     | RandomizeNumbers (List Int)
 
 
-type GameState 
+type GameState
     = NotStarted
     | Running
     | End
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -98,15 +107,17 @@ update msg model =
                 newSubs =
                     if model.gameState == NotStarted && number == startingNumber then
                         Running
-                    else if number == endingNumber && model.currentNumber == (endingNumber - 1 )then 
+
+                    else if number == endingNumber && model.currentNumber == (endingNumber - 1) then
                         End
+
                     else
                         model.gameState
             in
             ( { model | currentNumber = newNumber, gameState = newSubs }, Cmd.none )
 
         RandomizeNumbers numbers ->
-            ({model | numbers = numbers}, Cmd.none )
+            ( { model | numbers = numbers }, Cmd.none )
 
 
 
@@ -116,79 +127,89 @@ update msg model =
 subscriptions model =
     if model.gameState == Running then
         Time.every 100 Tick
+
     else
         Sub.none
+
+
 
 ---- VIEW ----
 
 
 view : Model -> Html Msg
-view model =        
-    div [class "container"]
+view model =
+    div [ class "container" ]
         [ instructions
-        , showButtons model 
+        , showButtons model
         , timer model
         , resetButton model
         ]
 
 
-
-
 resetButton : Model -> Html Msg
 resetButton model =
-    div [class "row"]
-        [ br [ class "row"] []
+    div [ class "row" ]
+        [ br [ class "row" ] []
         , hr [] []
         , if model.gameState /= NotStarted then
-                    button [ class "col-12 btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
-                 else
-                    text ""
+            button [ class "col-12 btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
+
+          else
+            text ""
         ]
 
-{-
-
-
-               , 
-               ]
--}
 
 instructions : Html Msg
-instructions =    
-    div [class "row"]
-        [ h1 [class "col-12"] [ text "The Number Game:" ]
-        , p [class "col-12"] [ text ("Click from 1 through to " ++ String.fromInt(endingNumber) ++ " as fast as you can!") ]
+instructions =
+    div [ class "row" ]
+        [ h1 [ class "col-12" ] [ text "The Number Game:" ]
+        , p [ class "col-12" ] [ text ("Click from 1 through to " ++ String.fromInt endingNumber ++ " as fast as you can!") ]
         , hr [] []
         ]
 
+
 timer : Model -> Html Msg
-timer model = 
+timer model =
     let
-        timerString = String.fromFloat (model.timer / 10)      
-        formattedTimerString =  if not (String.contains "." timerString) then
-                                   timerString ++ ".0"
-                                else
-                                    timerString
-        addFinishComment = if model.gameState == End then
-                            " - Finished!"
-                           else
-                            ""
+        timerString =
+            String.fromFloat (model.timer / 10)
+
+        formattedTimerString =
+            if not (String.contains "." timerString) then
+                timerString ++ ".0"
+
+            else
+                timerString
+
+        addFinishComment =
+            if model.gameState == End then
+                " - Finished!"
+
+            else
+                ""
     in
     h1 [] [ text ("Timer: " ++ formattedTimerString ++ addFinishComment) ]
 
+
 split : Int -> List a -> List (List a)
 split i list =
-  case take i list of
-    [] -> []
-    listHead -> listHead :: split i (drop i list)
+    case take i list of
+        [] ->
+            []
+
+        listHead ->
+            listHead :: split i (drop i list)
+
 
 showButtons : Model -> Html Msg
 showButtons model =
-    div [] ( (split 6  <| model.numbers)  |> List.map (\x -> showButtonRow model x))
+    div [] ((split 6 <| model.numbers) |> List.map (\x -> showButtonRow model x))
 
 
 showButtonRow : Model -> List Int -> Html Msg
 showButtonRow model list =
-    div [class "row no-gutters"] (List.map (\x -> showButton x model.currentNumber) list )  
+    div [ class "row no-gutters" ] (List.map (\x -> showButton x model.currentNumber) list)
+
 
 showButton : Int -> Int -> Html Msg
 showButton buttonNumber currentNumber =
@@ -196,16 +217,20 @@ showButton buttonNumber currentNumber =
         highlightCurrentButton =
             if buttonNumber == currentNumber then
                 "btn-outline-dark btn-block game-btn btn btn-danger "
+
             else if buttonNumber == startingNumber && currentNumber == 0 then
                 "btn-outline-dark btn-block game-btn btn btn-success"
+
             else if buttonNumber < currentNumber then
                 "btn-outline-dark btn-block game-btn btn btn-secondary"
+
             else
                 "btn-outline-dark btn-block game-btn btn btn-light"
-    in    
-        div [class "col-2 d-flex justify-content-center align-items-center"] 
-            [button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ]]
-        
+    in
+    div [ class "col-2 d-flex justify-content-center align-items-center" ]
+        [ button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ] ]
+
+
 
 ---- PROGRAM ----
 
