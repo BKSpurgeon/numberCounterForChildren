@@ -164,7 +164,7 @@ showButtons model =
 
 showButtonRow : Model -> List Int -> Html Msg
 showButtonRow model list =
-    div [class "row"] (List.map (\x -> showButton x model.currentNumber) list )  
+    div [class "row no-gutters"] (List.map (\x -> showButton x model.currentNumber) list )  
 
 showButton : Int -> Int -> Html Msg
 showButton buttonNumber currentNumber =
