@@ -27,7 +27,8 @@ import Time
            Adding a display flex will change the height stretchability of the item: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox i.e.  If some items are taller than others, all items will stretch along the cross axis to fill its full size.
        (5) do testing in elm
        (6) fix the styling  
-       (7) fix the timer     	   
+       (7) fix the timer     
+       (8) Fix bug: timer should only start when the correct number is pressed.	   
 -}
 ---- MODEL ----
 
