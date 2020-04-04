@@ -56,7 +56,7 @@ startingNumber : Int
 startingNumber = 1
 
 endingNumber : Int
-endingNumber = 36
+endingNumber = 30
 
 ---- UPDATE ----
 
