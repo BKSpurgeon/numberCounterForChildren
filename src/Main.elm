@@ -176,7 +176,7 @@ showButton buttonNumber currentNumber =
             else if buttonNumber == startingNumber && currentNumber == 0 then
                 "btn-outline-dark btn-block btn btn-success"
             else if buttonNumber < currentNumber then
-                "btn-outline-dark btn-block btn btn-link"
+                "btn-outline-dark btn-block btn btn-secondary"
             else
                 "btn-outline-dark btn-block btn btn-light"
     in    
