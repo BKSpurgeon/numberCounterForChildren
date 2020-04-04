@@ -168,8 +168,12 @@ timer model =
                                    timerString ++ ".0"
                                 else
                                     timerString
+        addFinishComment = if model.gameState == End then
+                            " - Finished!"
+                           else
+                            ""
     in
-    h1 [] [ text ("Timer: " ++ formattedTimerString) ]
+    h1 [] [ text ("Timer: " ++ formattedTimerString ++ addFinishComment) ]
 
 split : Int -> List a -> List (List a)
 split i list =
