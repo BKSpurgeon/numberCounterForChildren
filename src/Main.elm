@@ -28,8 +28,8 @@ import Time
        (5) do testing in elm
        (6) Cache the best time and display it:
        (7) Increase the font size of the buttons.
-       
-       
+
+
 -}
 ---- MODEL ----
 
@@ -144,34 +144,38 @@ view model =
         , showButtons model
         , timer model
         , encouragement model
-        , resetButton model        
+        , resetButton model
         ]
 
 
 encouragement : Model -> Html Msg
 encouragement model =
     let
-       encouragingWords = if model.gameState == End then
-            if model.timer < 15 then
-                text "Wow!! - Excellent work!! Can you go even lower?"
-            else if model.timer < 20 && model.timer >= 15  then
-                text "Nice work! Try to go sub-15?"
-            else if model.timer < 30 && model.timer >= 20 then
-                text "Good effort! I think you have sub-20 potential. Wanna try again?"
-            else if model.timer < 40 && model.timer >= 30 then
-                text "Good! Perhaps try for sub-30?"
-            else 
-                text "Nice. Try again for a faster time?"
-          else 
-            text ""        
-    in
+        encouragingWords =
+            if model.gameState == End then
+                if model.timer < 15 then
+                    text "Wow!! - Excellent work!! Can you go even lower?"
 
+                else if model.timer < 20 && model.timer >= 15 then
+                    text "Nice work! Try to go sub-15?"
+
+                else if model.timer < 30 && model.timer >= 20 then
+                    text "Good effort! I think you have sub-20 potential. Wanna try again?"
+
+                else if model.timer < 40 && model.timer >= 30 then
+                    text "Good! Perhaps try for sub-30?"
+
+                else
+                    text "Nice. Try again for a faster time?"
+
+            else
+                text ""
+    in
     div [ class "row" ]
         [ hr [] []
-        , div [class "col-12"] 
-              [encouragingWords]        
+        , div [ class "col-12" ]
+            [ encouragingWords ]
         ]
-
 
 
 resetButton : Model -> Html Msg
@@ -254,16 +258,20 @@ showButton model buttonNumber =
 
             else
                 "btn-outline-dark btn-block game-btn btn btn-light"
-        obfuscateButtonNumber = if model.gameState == NotStarted then
-                                   if buttonNumber /= 1 then
-                                    " x "
-                                   else 
-                                     "1"
-                                else
-                                    String.fromInt buttonNumber
+
+        obfuscateButtonNumber =
+            if model.gameState == NotStarted then
+                if buttonNumber /= 1 then
+                    " x "
+
+                else
+                    "1"
+
+            else
+                String.fromInt buttonNumber
     in
     div [ class "col-2 d-flex justify-content-center align-items-center" ]
-        [ button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (obfuscateButtonNumber) ] ]
+        [ button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text obfuscateButtonNumber ] ]
 
 
 
