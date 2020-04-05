@@ -17,8 +17,6 @@ import Time
    To do:
 
        (2) Master piping operations. |> and <| till you are completely comfortable with it.
-       (3) Fix the problem of splitting lists into rows and displaying them:
-       	   https://stackoverflow.com/questions/37361229/elm-split-list-into-multiple-lists
        (4) Fix the layout: we'd like everything a little more square
            Understanding bootstrap: https://medium.com/wdstack/bootstrap-equal-height-columns-d07bc934eb27
            also see here: https://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all-the-same-height#comment56504018_19695851
@@ -28,7 +26,8 @@ import Time
        (5) do testing in elm
        (6) Cache the best time and display it:
        (7) Increase the font size of the buttons.
-
+       (8) add like and subscribe buttons
+       (9) add a celebration if you win.
 
 -}
 ---- MODEL ----
@@ -248,16 +247,16 @@ showButton model buttonNumber =
     let
         highlightCurrentButton =
             if buttonNumber == model.currentNumber then
-                "btn-outline-dark btn-block game-btn btn btn-danger "
+                "btn-block game-btn border-dark btn btn-success"
 
             else if buttonNumber == startingNumber && model.currentNumber == 0 then
-                "btn-outline-dark btn-block game-btn btn btn-success"
+                "btn-block game-btn border-dark btn btn-success"
 
             else if buttonNumber < model.currentNumber then
-                "btn-outline-dark btn-block game-btn btn btn-secondary"
+                "btn-block game-btn border-dark btn btn-secondary"
 
             else
-                "btn-outline-dark btn-block game-btn btn btn-light"
+                "btn-block game-btn border-dark btn btn-light"
 
         obfuscateButtonNumber =
             if model.gameState == NotStarted then
