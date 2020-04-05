@@ -236,11 +236,11 @@ showButtons model =
 
 showButtonRow : Model -> List Int -> Html Msg
 showButtonRow model list =
-    div [ class "row no-gutters" ] (List.map (\x -> showButton x model.currentNumber) list)
+    div [ class "row no-gutters" ] (List.map (\x -> showButton model x model.currentNumber) list)
 
 
-showButton : Int -> Int -> Html Msg
-showButton buttonNumber currentNumber =
+showButton : Model -> Int -> Int -> Html Msg
+showButton model buttonNumber currentNumber =
     let
         highlightCurrentButton =
             if buttonNumber == currentNumber then
@@ -254,9 +254,16 @@ showButton buttonNumber currentNumber =
 
             else
                 "btn-outline-dark btn-block game-btn btn btn-light"
+        obfuscateButtonNumber = if model.gameState == NotStarted then
+                                   if buttonNumber /= 1 then
+                                    " x "
+                                   else 
+                                     "1"
+                                else
+                                    String.fromInt buttonNumber
     in
     div [ class "col-2 d-flex justify-content-center align-items-center" ]
-        [ button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (String.fromInt buttonNumber) ] ]
+        [ button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text (obfuscateButtonNumber) ] ]
 
 
 
