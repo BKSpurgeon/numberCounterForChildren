@@ -236,20 +236,20 @@ showButtons model =
 
 showButtonRow : Model -> List Int -> Html Msg
 showButtonRow model list =
-    div [ class "row no-gutters" ] (List.map (\x -> showButton model x model.currentNumber) list)
+    div [ class "row no-gutters" ] (List.map (\x -> showButton model x) list)
 
 
-showButton : Model -> Int -> Int -> Html Msg
-showButton model buttonNumber currentNumber =
+showButton : Model -> Int -> Html Msg
+showButton model buttonNumber =
     let
         highlightCurrentButton =
-            if buttonNumber == currentNumber then
+            if buttonNumber == model.currentNumber then
                 "btn-outline-dark btn-block game-btn btn btn-danger "
 
-            else if buttonNumber == startingNumber && currentNumber == 0 then
+            else if buttonNumber == startingNumber && model.currentNumber == 0 then
                 "btn-outline-dark btn-block game-btn btn btn-success"
 
-            else if buttonNumber < currentNumber then
+            else if buttonNumber < model.currentNumber then
                 "btn-outline-dark btn-block game-btn btn btn-secondary"
 
             else
