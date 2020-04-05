@@ -1,3 +1,6 @@
+-- port module Main exposing (..)
+
+
 module Main exposing (..)
 
 import Browser
@@ -5,6 +8,7 @@ import Browser.Events exposing (onAnimationFrameDelta)
 import Html exposing (Html, br, button, div, h1, hr, p, text)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
+import Json.Encode as E
 import List exposing (..)
 import List.Extra exposing (groupsOf)
 import Random
@@ -38,17 +42,23 @@ type alias Model =
     , gameState : GameState
     , currentNumber : Int
     , numbers : List Int
+    , fastestTime : Maybe Float
     }
 
 
 initialModel : Model
 initialModel =
-    { timer = 0, gameState = NotStarted, currentNumber = 0, numbers = [] }
+    { timer = 0, gameState = NotStarted, currentNumber = 0, numbers = [], fastestTime = Nothing }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( initialModel, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
+init : Maybe Float -> ( Model, Cmd Msg )
+init flags =
+    case flags of
+        Nothing ->
+            ( { initialModel | fastestTime = Nothing }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
+
+        Just lowestScore ->
+            ( { initialModel | fastestTime = Just lowestScore }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
 
 
 
@@ -62,7 +72,7 @@ startingNumber =
 
 endingNumber : Int
 endingNumber =
-    30
+    4
 
 
 
@@ -75,6 +85,7 @@ type Msg
     | ResetGame
     | NumberPress Int
     | RandomizeNumbers (List Int)
+    | ChangedLowScore E.Value
 
 
 type GameState
@@ -93,7 +104,7 @@ update msg model =
             ( { model | timer = model.timer + 1.0 }, Cmd.none )
 
         ResetGame ->
-            init
+            ( { initialModel | fastestTime = model.fastestTime }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
 
         NumberPress number ->
             let
@@ -119,6 +130,9 @@ update msg model =
         RandomizeNumbers numbers ->
             ( { model | numbers = numbers }, Cmd.none )
 
+        ChangedLowScore score ->
+            ( model, Cmd.none )
+
 
 
 ---- SUBSCRIPTIONS ----
@@ -143,16 +157,22 @@ view model =
         , showButtons model
         , timer model
         , encouragement model
-        , resetButton model
+        , resetButton model               
         ]
-
 
 encouragement : Model -> Html Msg
 encouragement model =
     let
         encouragingWords =
-            if model.gameState == End then
-               text "Nice work! Try again for a faster time?"
+            if model.gameState == End then                
+                    case model.fastestTime of
+                        Nothing ->
+                           text "Finished: wow! That's a new record!"
+                        Just fastestTime ->
+                           if model.timer / 10 < fastestTime then                
+                            text "Finished: wow! That's a new record!"
+                           else 
+                            text "Finished: nice work! Try again for a faster time?"
 
             else
                 text ""
@@ -199,14 +219,13 @@ timer model =
             else
                 timerString
 
-        addFinishComment =
-            if model.gameState == End then
-                " - Finished!"
-
-            else
-                ""
+        fastestTimeComment = case model.fastestTime of
+                        Nothing ->
+                            ""
+                        Just fastestTime ->                      
+                         " (Record: " ++ String.fromFloat(fastestTime) ++ ")"
     in
-    h1 [] [ text ("Timer: " ++ formattedTimerString ++ addFinishComment) ]
+    h1 [] [ text ("Timer: " ++ formattedTimerString ++ fastestTimeComment) ]
 
 
 split : Int -> List a -> List (List a)
@@ -264,11 +283,17 @@ showButton model buttonNumber =
 ---- PROGRAM ----
 
 
-main : Program () Model Msg
+main : Program (Maybe Float) Model Msg
 main =
     Browser.element
         { view = view
-        , init = \_ -> init
+        , init = init
         , update = update
         , subscriptions = subscriptions
         }
+
+
+
+---- Ports -----
+-- port cache : E.Value -> Cmd msg
+-- port existingLowScore : (E.Value -> msg) -> Sub msg
