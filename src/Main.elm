@@ -63,7 +63,7 @@ startingNumber =
 
 endingNumber : Int
 endingNumber =
-    30
+    4
 
 
 
@@ -143,8 +143,35 @@ view model =
         [ instructions
         , showButtons model
         , timer model
-        , resetButton model
+        , encouragement model
+        , resetButton model        
         ]
+
+
+encouragement : Model -> Html Msg
+encouragement model =
+    let
+       encouragingWords = if model.gameState == End then
+            if model.timer < 15 then
+                text "Wow!! - Excellent work!! Can you go even lower?"
+            else if model.timer < 20 && model.timer >= 15  then
+                text "Nice work! Try to go sub-15?"
+            else if model.timer < 30 && model.timer >= 20 then
+                text "Good effort! I think you have sub-20 potential. Wanna try again?"
+            else if model.timer < 40 && model.timer >= 30 then
+                text "Good! Perhaps try for sub-30?"
+            else 
+                text "Nice. Try again for a faster time?"
+          else 
+            text ""        
+    in
+
+    div [ class "row" ]
+        [ hr [] []
+        , div [class "col-12"] 
+              [encouragingWords]        
+        ]
+
 
 
 resetButton : Model -> Html Msg
