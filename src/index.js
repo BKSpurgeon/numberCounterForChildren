@@ -10,15 +10,14 @@ var startingLowScore = storedState ? JSON.parse(storedState) : null;
 
 var app = Elm.Main.init({
   node: document.getElementById('root'),
-  flags: 15.3
+  flags: startingLowScore
 });
 
-/*
+
 // let's come back to the ports after we first sort out: flags
 
-app.ports.cache.subscribe(function(data) {
+app.ports.cacheScore.subscribe(function(data) {
   localStorage.setItem('cache', JSON.stringify(data));
 });
 
-*/
 registerServiceWorker();

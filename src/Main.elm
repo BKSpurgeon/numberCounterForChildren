@@ -1,7 +1,5 @@
--- port module Main exposing (..)
+port module Main exposing (..)
 
-
-module Main exposing (..)
 
 import Browser
 import Browser.Events exposing (onAnimationFrameDelta)
@@ -57,8 +55,8 @@ init flags =
         Nothing ->
             ( { initialModel | fastestTime = Nothing }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
 
-        Just lowestScore ->
-            ( { initialModel | fastestTime = Just lowestScore }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
+        Just fastestTime ->
+            ( { initialModel | fastestTime = Just fastestTime }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
 
 
 
@@ -72,7 +70,7 @@ startingNumber =
 
 endingNumber : Int
 endingNumber =
-    4
+    30
 
 
 
@@ -85,7 +83,6 @@ type Msg
     | ResetGame
     | NumberPress Int
     | RandomizeNumbers (List Int)
-    | ChangedLowScore E.Value
 
 
 type GameState
@@ -104,7 +101,7 @@ update msg model =
             ( { model | timer = model.timer + 1.0 }, Cmd.none )
 
         ResetGame ->
-            ( { initialModel | fastestTime = model.fastestTime }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
+            ( { initialModel | fastestTime = model.fastestTime }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))  )
 
         NumberPress number ->
             let
@@ -124,14 +121,23 @@ update msg model =
 
                     else
                         model.gameState
+
             in
-            ( { model | currentNumber = newNumber, gameState = newSubs }, Cmd.none )
+            case model.fastestTime of
+                Just fastestTime ->
+                    if newSubs == End && (model.timer / 10 ) < fastestTime then
+                        ( { model | currentNumber = newNumber, gameState = newSubs, fastestTime =  Just (model.timer / 10) }, cacheScore (model.timer / 10) )
+                    else            
+                        ( { model | currentNumber = newNumber, gameState = newSubs }, Cmd.none )
+                Nothing ->
+                    if newSubs == End then
+                        ( { model | currentNumber = newNumber, gameState = newSubs, fastestTime = Just (model.timer / 10) }, cacheScore (model.timer / 10) )
+                    else
+                        ( { model | currentNumber = newNumber, gameState = newSubs }, Cmd.none )
+            
 
         RandomizeNumbers numbers ->
             ( { model | numbers = numbers }, Cmd.none )
-
-        ChangedLowScore score ->
-            ( model, Cmd.none )
 
 
 
@@ -167,10 +173,10 @@ encouragement model =
             if model.gameState == End then                
                     case model.fastestTime of
                         Nothing ->
-                           text "Finished: wow! That's a new record!"
+                           text "Wow! That's a new record!"
                         Just fastestTime ->
-                           if model.timer / 10 < fastestTime then                
-                            text "Finished: wow! That's a new record!"
+                           if model.timer / 10 == fastestTime then                
+                            text "Wow! That's a new record!"
                            else 
                             text "Finished: nice work! Try again for a faster time?"
 
@@ -295,5 +301,5 @@ main =
 
 
 ---- Ports -----
--- port cache : E.Value -> Cmd msg
+port cacheScore : Float-> Cmd msg
 -- port existingLowScore : (E.Value -> msg) -> Sub msg
