@@ -1,6 +1,6 @@
 {
-  "short_name": "Elm App",
-  "name": "Create Elm App Sample",
+  "short_name": "Number Counter",
+  "name": "Number Counter",
   "icons": [
     {
       "src": "favicon.ico",
