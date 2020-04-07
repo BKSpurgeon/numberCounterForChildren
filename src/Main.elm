@@ -26,10 +26,25 @@ import Time
            https://stackoverflow.com/a/49692667/4880924
            Adding a display flex will change the height stretchability of the item: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox i.e.  If some items are taller than others, all items will stretch along the cross axis to fill its full size.
        (5) do testing in elm
-       (6) Cache the best time and display it:
+       (6) If the wrong button is pressed: make it turn  red. Improve the clicking performance of the numbers.
        (7) Increase the font size of the buttons.
        (8) add like and subscribe buttons
        (9) add a celebration if you win.
+       (10) Update the favico icon.
+
+
+
+
+https://package.elm-lang.org/packages/elm/core/latest/Maybe#map
+       	f x =
+  let
+    result = Maybe.map (\v -> 3.14 > v) x
+  in
+    Maybe.withDefault False result
+
+
+You should avoid using withDefault until you reach a point in your code where you can actually handle the Nothing case in a useful way.
+    Don't withDefault to a nonsense value that you check for later. (This is a common newbie mistake when using Maybe)
 
 -}
 ---- MODEL ----
@@ -41,12 +56,13 @@ type alias Model =
     , currentNumber : Int
     , numbers : List Int
     , fastestTime : Maybe Float
+    , currentlyPressedNumber : Int
     }
 
 
 initialModel : Model
 initialModel =
-    { timer = 0, gameState = NotStarted, currentNumber = 0, numbers = [], fastestTime = Nothing }
+    { timer = 0, gameState = NotStarted, currentNumber = 0, numbers = [], fastestTime = Nothing, currentlyPressedNumber = -1 }
 
 
 init : Maybe Float -> ( Model, Cmd Msg )
@@ -126,14 +142,14 @@ update msg model =
             case model.fastestTime of
                 Just fastestTime ->
                     if newSubs == End && (model.timer / 10 ) < fastestTime then
-                        ( { model | currentNumber = newNumber, gameState = newSubs, fastestTime =  Just (model.timer / 10) }, cacheScore (model.timer / 10) )
+                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs, fastestTime =  Just (model.timer / 10) }, cacheScore (model.timer / 10) )
                     else            
-                        ( { model | currentNumber = newNumber, gameState = newSubs }, Cmd.none )
+                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs }, Cmd.none )
                 Nothing ->
                     if newSubs == End then
-                        ( { model | currentNumber = newNumber, gameState = newSubs, fastestTime = Just (model.timer / 10) }, cacheScore (model.timer / 10) )
+                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs, fastestTime = Just (model.timer / 10) }, cacheScore (model.timer / 10) )
                     else
-                        ( { model | currentNumber = newNumber, gameState = newSubs }, Cmd.none )
+                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs }, Cmd.none )
             
 
         RandomizeNumbers numbers ->
@@ -259,16 +275,18 @@ showButton model buttonNumber =
     let
         highlightCurrentButton =
             if buttonNumber == model.currentNumber then
-                "btn-block game-btn border-dark btn btn-success"
+                "btn-block border-dark game-btn btn btn-success"
 
             else if buttonNumber == startingNumber && model.currentNumber == 0 then
-                "btn-block game-btn border-dark btn btn-success"
+                "btn-block border-dark game-btn btn btn-success"
 
             else if buttonNumber < model.currentNumber then
-                "btn-block game-btn border-dark btn btn-secondary"
+                "btn-block border-dark game-btn btn btn-secondary"
 
+            else if model.currentlyPressedNumber /= model.currentNumber && buttonNumber == model.currentlyPressedNumber then
+                "btn-block border-dark game-btn btn btn-danger"
             else
-                "btn-block game-btn border-dark btn btn-light"
+                "btn-block border-dark game-btn btn btn-light"
 
         obfuscateButtonNumber =
             if model.gameState == NotStarted then
