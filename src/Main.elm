@@ -13,6 +13,8 @@ import Random
 import Random.List exposing (shuffle)
 import Time
 
+import Http
+import Json.Decode exposing (Decoder, field, string)
 
 
 {-
@@ -25,18 +27,15 @@ import Time
            https://stackoverflow.com/questions/20456694/grid-of-responsive-squares
            https://stackoverflow.com/a/49692667/4880924
            Adding a display flex will change the height stretchability of the item: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox i.e.  If some items are taller than others, all items will stretch along the cross axis to fill its full size.
-       (5) do testing in elm
-       (6) If the wrong button is pressed: make it turn  red. Improve the clicking performance of the numbers.
+       (5) do testing in elm       
        (7) Increase the font size of the buttons.
        (8) add like and subscribe buttons
        (9) add a celebration if you win.
-       (10) Update the favico icon.
-
-
+       (10) deal with the x10 issues - preferably deal with this properly and in an orderly manner.
 
 
 https://package.elm-lang.org/packages/elm/core/latest/Maybe#map
-       	f x =
+              f x =
   let
     result = Maybe.map (\v -> 3.14 > v) x
   in
@@ -57,12 +56,13 @@ type alias Model =
     , numbers : List Int
     , fastestTime : Maybe Float
     , currentlyPressedNumber : Int
+    , gifState : GifState
     }
 
 
 initialModel : Model
 initialModel =
-    { timer = 0, gameState = NotStarted, currentNumber = 0, numbers = [], fastestTime = Nothing, currentlyPressedNumber = -1 }
+    { timer = 0, gameState = NotStarted, currentNumber = 0, numbers = [], fastestTime = Nothing, currentlyPressedNumber = -1, gifState = Failure }
 
 
 init : Maybe Float -> ( Model, Cmd Msg )
@@ -99,6 +99,13 @@ type Msg
     | ResetGame
     | NumberPress Int
     | RandomizeNumbers (List Int)
+    | GotGif (Result Http.Error String)
+
+
+type GifState 
+    = Failure
+    | Loading
+    | Success String
 
 
 type GameState
@@ -154,6 +161,13 @@ update msg model =
 
         RandomizeNumbers numbers ->
             ( { model | numbers = numbers }, Cmd.none )
+        
+        GotGif result ->
+               case result of
+                 Ok url ->
+                   ({model | gifState = Success url}, Cmd.none)
+                 Err _ ->
+                   ({model | gifState = Failure}, Cmd.none)
 
 
 
@@ -316,6 +330,27 @@ main =
         , subscriptions = subscriptions
         }
 
+----- HTTP
+{-
+API key: sd2CNhUjDfoQqLTH0nlL3Uf2YwHRHoyq
+
+-}
+
+---- HTTP
+
+
+
+getRandomCatGif : Cmd Msg
+getRandomCatGif =
+  Http.get
+    { url = "https://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=cat"
+    , expect = Http.expectJson (GotGif gifDecoder)
+    }
+
+
+gifDecoder : Decoder String
+gifDecoder =
+  field "data" (field "image_url" string)
 
 
 ---- Ports -----
