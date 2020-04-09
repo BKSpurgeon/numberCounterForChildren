@@ -216,7 +216,7 @@ encouragement model =
 
 
         winning =  div [ class "col-12" ]
-                       [text "Wow! That's a new record!"
+                       [text "Wow! That's a new record! Take a screenshot as proof and see if your friends can beat this?"
                        , div []
                          [showappropriateGif]
                        ]
