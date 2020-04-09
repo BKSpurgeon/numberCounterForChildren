@@ -8,7 +8,6 @@ import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
 import Json.Encode as E
 import List exposing (..)
-import List.Extra exposing (groupsOf)
 import Random
 import Random.List exposing (shuffle)
 import Time
