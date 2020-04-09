@@ -1,9 +1,7 @@
 port module Main exposing (..)
-
-
 import Browser
 import Browser.Events exposing (onAnimationFrameDelta)
-import Html exposing (Html, br, button, div, h1, hr, p, text)
+import Html exposing (Html, br, button, div, h1, hr, p, text, img)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
 import Json.Encode as E
@@ -29,8 +27,7 @@ import Json.Decode exposing (Decoder, field, string)
        (5) do testing in elm       
        (7) Increase the font size of the buttons.
        (8) add like and subscribe buttons
-       (9) add a celebration if you win.
-       (10) deal with the x10 issues - preferably deal with this properly and in an orderly manner.
+       (9) add a celebration if you win.      
 
 
 https://package.elm-lang.org/packages/elm/core/latest/Maybe#map
@@ -61,17 +58,20 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { timer = 0, gameState = NotStarted, currentNumber = 0, numbers = [], fastestTime = Nothing, currentlyPressedNumber = -1, gifState = Failure }
+    { timer = 0, gameState = NotStarted, currentNumber = 0, 
+          numbers = [], fastestTime = Nothing, currentlyPressedNumber = -1, gifState = Failure }
 
 
 init : Maybe Float -> ( Model, Cmd Msg )
 init flags =
     case flags of
         Nothing ->
-            ( { initialModel | fastestTime = Nothing }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
+            ( { initialModel | fastestTime = Nothing }, 
+                   Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
 
         Just fastestTime ->
-            ( { initialModel | fastestTime = Just fastestTime }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
+            ( { initialModel | fastestTime = Just fastestTime }, 
+                   Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
 
 
 
@@ -87,10 +87,7 @@ endingNumber : Int
 endingNumber =
     30
 
-
-
 ---- UPDATE ----
-
 
 type Msg
     = NoOp
@@ -123,7 +120,8 @@ update msg model =
             ( { model | timer = model.timer + 1.0 }, Cmd.none )
 
         ResetGame ->
-            ( { initialModel | fastestTime = model.fastestTime }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))  )
+            ( { initialModel | fastestTime = model.fastestTime },
+             Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))  )
 
         NumberPress number ->
             let
@@ -143,20 +141,32 @@ update msg model =
 
                     else
                         model.gameState
+                aNewRecord fastestTime = (model.timer / 10 ) < fastestTime 
 
             in
             case model.fastestTime of
                 Just fastestTime ->
-                    if newSubs == End && (model.timer / 10 ) < fastestTime then
-                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs, fastestTime =  Just (model.timer / 10) }, cacheScore (model.timer / 10) )
-                    else            
+                    if newSubs == End then
+                        if  aNewRecord (fastestTime) then
+                           ( { model | currentlyPressedNumber = number , currentNumber = newNumber,
+                                gameState = newSubs, fastestTime =  Just (model.timer / 10) }, 
+                                      Cmd.batch [cacheScore (model.timer / 10), getRandomGif "victory"] )
+                        else if (model.timer / 10) < 20 then
+                            ( { model | currentlyPressedNumber = number,
+                                 currentNumber = newNumber, gameState = newSubs }, getRandomGif "winner" )
+                        else if (model.timer / 10) < 30 then
+                            ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs }, 
+                                Cmd.none )
+                        else
+                            ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs }, 
+                                getRandomGif "loser" )
+                    else                        
                         ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs }, Cmd.none )
                 Nothing ->
                     if newSubs == End then
-                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs, fastestTime = Just (model.timer / 10) }, cacheScore (model.timer / 10) )
+                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs, fastestTime = Just (model.timer / 10) }, Cmd.batch [cacheScore (model.timer / 10), getRandomGif "victory"]  )
                     else
-                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs }, Cmd.none )
-            
+                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs }, Cmd.none )            
 
         RandomizeNumbers numbers ->
             ( { model | numbers = numbers }, Cmd.none )
@@ -198,24 +208,46 @@ view model =
 encouragement : Model -> Html Msg
 encouragement model =
     let
+        showappropriateGif = case model.gifState of
+                                Success url ->
+                                    img [src url] []
+                                _ -> 
+                                    div [] []
+
+
+        winning =  div [ class "col-12" ]
+                       [text "Wow! That's a new record!"
+                       , div []
+                         [showappropriateGif]
+                       ]
+
         encouragingWords =
             if model.gameState == End then                
                     case model.fastestTime of
                         Nothing ->
-                           text "Wow! That's a new record!"
+                           winning
+                           
                         Just fastestTime ->
-                           if model.timer / 10 == fastestTime then                
-                            text "Wow! That's a new record!"
-                           else 
-                            text "Finished: nice work! Try again for a faster time?"
-
+                           if model.timer / 10 == fastestTime || model.timer / 10 < fastestTime then                
+                               winning
+                           else if model.timer / 10 < 20 then
+                             div [ class "col-12" ]
+                                [text "Nice time! But do you wanna beat your record?"
+                                , div []
+                                      [showappropriateGif]
+                                ]
+                           else
+                            div [ class "col-12" ]
+                                [text "Try again for a faster time?"
+                                , div []
+                                      [showappropriateGif]
+                                ]
             else
                 text ""
     in
     div [ class "row" ]
         [ hr [] []
-        , div [ class "col-12" ]
-            [ encouragingWords ]
+        , encouragingWords 
         ]
 
 
@@ -331,19 +363,26 @@ main =
 
 ----- HTTP
 {-
+
+    the number counter one:
 API key: sd2CNhUjDfoQqLTH0nlL3Uf2YwHRHoyq
+
+
+
+the test one:
+    PntiBxszYGgYpLyu3SfoFaTvpG3wEoRB
 
 -}
 
+
+
 ---- HTTP
 
-
-
-getRandomCatGif : Cmd Msg
-getRandomCatGif =
+getRandomGif : String -> Cmd Msg
+getRandomGif gifType =
   Http.get
-    { url = "https://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag=cat"
-    , expect = Http.expectJson (GotGif gifDecoder)
+    { url = "https://api.giphy.com/v1/gifs/random?rating=g&api_key=sd2CNhUjDfoQqLTH0nlL3Uf2YwHRHoyq&tag=" ++ gifType
+    , expect = Http.expectJson GotGif gifDecoder
     }
 
 
@@ -354,4 +393,4 @@ gifDecoder =
 
 ---- Ports -----
 port cacheScore : Float-> Cmd msg
--- port existingLowScore : (E.Value -> msg) -> Sub msg
+
