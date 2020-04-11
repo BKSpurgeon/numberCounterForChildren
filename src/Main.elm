@@ -1,7 +1,7 @@
 port module Main exposing (..)
 import Browser
 import Browser.Events exposing (onAnimationFrameDelta)
-import Html exposing (Html, br, button, div, h1, hr, p, text, img)
+import Html exposing (Html, br, button, div, h1, hr, p, text, img, small)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
 import Json.Encode as E
@@ -289,9 +289,13 @@ timer model =
                         Just fastestTime ->                      
                          " (Record: " ++ String.fromFloat(fastestTime) ++ ")"
     in
-    h1 [] [ text ("Timer: " ++ formattedTimerString ++ fastestTimeComment) ]
+    div [] [ h1 [] [ text ("Timer: " ++ formattedTimerString)]
+           , br [] []  
+           , h1 [] [text fastestTimeComment]
+           , small [class "form-text text-muted"] [ text "Can you go sub 12 seconds? (It's possible with practice!) "]
+           ]
 
-
+-- small [class "form-text text-muted"] [ text "Can you go sub 15 seconds?"]
 split : Int -> List a -> List (List a)
 split i list =
     case take i list of
