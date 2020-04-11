@@ -198,8 +198,9 @@ view model =
         [ instructions
         , showButtons model
         , timer model
+        , resetButton model
         , encouragement model
-        , resetButton model               
+        , recordTime model               
         ]
 
 encouragement : Model -> Html Msg
@@ -251,8 +252,7 @@ encouragement model =
 resetButton : Model -> Html Msg
 resetButton model =
     div [ class "row" ]
-        [ br [ class "row" ] []
-        , hr [] []
+        [ br [ class "row" ] []        
         , if model.gameState /= NotStarted then
             button [ class "col-12 btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
 
@@ -265,8 +265,7 @@ instructions : Html Msg
 instructions =
     div [ class "row" ]
         [ h1 [ class "col-12" ] [ text "The Number Game:" ]
-        , p [ class "col-12" ] [ text ("Click from 1 through to " ++ String.fromInt endingNumber ++ " as fast as you can!") ]
-        , hr [] []
+        , p [ class "col-12" ] [ text ("Click from 1 through to " ++ String.fromInt endingNumber ++ " as fast as you can!") ]        
         ]
 
 
@@ -281,19 +280,35 @@ timer model =
                 timerString ++ ".0"
 
             else
-                timerString
+                timerString        
+    in
+    div [] [ h1 [] [ text ("Timer: " ++ formattedTimerString)]
+           ]
+
+
+recordTime : Model -> Html Msg
+recordTime model =
+    let
+        timerString time =
+            String.fromFloat (time)
+
+        formattedTimerString time =
+            if not (String.contains "." (timerString time)) then
+                timerString time ++ ".0"
+
+            else
+                timerString time
 
         fastestTimeComment = case model.fastestTime of
                         Nothing ->
                             ""
                         Just fastestTime ->                      
-                         " (Record: " ++ String.fromFloat(fastestTime) ++ ")"
+                         "(Record: " ++ (formattedTimerString fastestTime) ++ ")"
     in
-    div [] [ h1 [] [ text ("Timer: " ++ formattedTimerString)]
-           , br [] []  
-           , h1 [] [text fastestTimeComment]
+    div [] [ h1 [] [text fastestTimeComment]
            , small [class "form-text text-muted"] [ text "Can you go sub 12 seconds? (It's possible with practice!) "]
            ]
+
 
 -- small [class "form-text text-muted"] [ text "Can you go sub 15 seconds?"]
 split : Int -> List a -> List (List a)
