@@ -151,12 +151,9 @@ update msg model =
                            ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber,
                                 gameState = theNewGameState, fastestTime =  Just (model.timer / 10) }, 
                                       Cmd.batch [cacheScore (model.timer / 10), getRandomGif "victory"] )
-                        else if (model.timer / 10) < 20 then
-                            ( { model | currentlyPressedNumber = pressedNumber,
-                                 currentNumber = theNextCorrectNumber, gameState = theNewGameState }, getRandomGif "winner" )
                         else if (model.timer / 10) < 30 then
-                            ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber, gameState = theNewGameState }, 
-                                Cmd.none )
+                            ( { model | currentlyPressedNumber = pressedNumber,
+                                 currentNumber = theNextCorrectNumber, gameState = theNewGameState }, getRandomGif "winner" )                        
                         else
                             ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber, gameState = theNewGameState }, 
                                 getRandomGif "loser" )
@@ -230,9 +227,9 @@ encouragement model =
                         Just fastestTime ->
                            if model.timer / 10 == fastestTime || model.timer / 10 < fastestTime then                
                                winning
-                           else if model.timer / 10 < 20 then
+                           else if model.timer / 10 < 30 then
                              div [ class "col-12" ]
-                                [text "Nice time! But do you wanna beat your record?"
+                                [text "Nice time! How does it compare with your friends' times? Screenshot + send to them?"
                                 , div []
                                       [showappropriateGif]
                                 ]
