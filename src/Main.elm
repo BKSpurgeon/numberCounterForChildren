@@ -123,50 +123,50 @@ update msg model =
             ( { initialModel | fastestTime = model.fastestTime },
              Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))  )
 
-        NumberPress number ->
+        NumberPress pressedNumber ->
             let
-                newNumber =
-                    if number == (model.currentNumber + 1) then
+                theNextCorrectNumber =
+                    if pressedNumber == (model.currentNumber + 1) then
                         model.currentNumber + 1
-
                     else
                         model.currentNumber
 
-                newSubs =
-                    if model.gameState == NotStarted && number == startingNumber then
+                theNewGameState =
+                    if model.gameState == NotStarted && pressedNumber == startingNumber then
                         Running
 
-                    else if number == endingNumber && model.currentNumber == (endingNumber - 1) then
+                    else if pressedNumber == endingNumber && model.currentNumber == (endingNumber - 1) then
                         End
 
                     else
                         model.gameState
-                aNewRecord fastestTime = (model.timer / 10 ) < fastestTime 
+
+                youHaveaNewRecord fastestTime = (model.timer / 10 ) < fastestTime 
 
             in
             case model.fastestTime of
                 Just fastestTime ->
-                    if newSubs == End then
-                        if  aNewRecord (fastestTime) then
-                           ( { model | currentlyPressedNumber = number , currentNumber = newNumber,
-                                gameState = newSubs, fastestTime =  Just (model.timer / 10) }, 
+                    if theNewGameState == End then
+                        if youHaveaNewRecord (fastestTime) then
+                           ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber,
+                                gameState = theNewGameState, fastestTime =  Just (model.timer / 10) }, 
                                       Cmd.batch [cacheScore (model.timer / 10), getRandomGif "victory"] )
                         else if (model.timer / 10) < 20 then
-                            ( { model | currentlyPressedNumber = number,
-                                 currentNumber = newNumber, gameState = newSubs }, getRandomGif "winner" )
+                            ( { model | currentlyPressedNumber = pressedNumber,
+                                 currentNumber = theNextCorrectNumber, gameState = theNewGameState }, getRandomGif "winner" )
                         else if (model.timer / 10) < 30 then
-                            ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs }, 
+                            ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber, gameState = theNewGameState }, 
                                 Cmd.none )
                         else
-                            ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs }, 
+                            ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber, gameState = theNewGameState }, 
                                 getRandomGif "loser" )
                     else                        
-                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs }, Cmd.none )
+                        ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
                 Nothing ->
-                    if newSubs == End then
-                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs, fastestTime = Just (model.timer / 10) }, Cmd.batch [cacheScore (model.timer / 10), getRandomGif "victory"]  )
+                    if theNewGameState == End then
+                        ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber, gameState = theNewGameState, fastestTime = Just (model.timer / 10) }, Cmd.batch [cacheScore (model.timer / 10), getRandomGif "victory"]  )
                     else
-                        ( { model | currentlyPressedNumber = number , currentNumber = newNumber, gameState = newSubs }, Cmd.none )            
+                        ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )            
 
         RandomizeNumbers numbers ->
             ( { model | numbers = numbers }, Cmd.none )
