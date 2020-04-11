@@ -1,45 +1,46 @@
 port module Main exposing (..)
+
 import Browser
 import Browser.Events exposing (onAnimationFrameDelta)
-import Html exposing (Html, br, button, div, h1, hr, p, text, img, small)
+import Html exposing (Html, br, button, div, h1, hr, img, p, small, text)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
+import Http
+import Json.Decode exposing (Decoder, field, string)
 import Json.Encode as E
 import List exposing (..)
 import Random
 import Random.List exposing (shuffle)
 import Time
 
-import Http
-import Json.Decode exposing (Decoder, field, string)
 
 
 {-
-   To do:
+      To do:
 
-       (2) Master piping operations. |> and <| till you are completely comfortable with it.
-       (4) Fix the layout: we'd like everything a little more square
-           Understanding bootstrap: https://medium.com/wdstack/bootstrap-equal-height-columns-d07bc934eb27
-           also see here: https://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all-the-same-height#comment56504018_19695851
-           https://stackoverflow.com/questions/20456694/grid-of-responsive-squares
-           https://stackoverflow.com/a/49692667/4880924
-           Adding a display flex will change the height stretchability of the item: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox i.e.  If some items are taller than others, all items will stretch along the cross axis to fill its full size.
-       (5) do testing in elm       
-       (7) Increase the font size of the buttons.
-       (8) add like and subscribe buttons
-       (9) add a celebration if you win.      
-
-
-https://package.elm-lang.org/packages/elm/core/latest/Maybe#map
-              f x =
-  let
-    result = Maybe.map (\v -> 3.14 > v) x
-  in
-    Maybe.withDefault False result
+          (2) Master piping operations. |> and <| till you are completely comfortable with it.
+          (4) Fix the layout: we'd like everything a little more square
+              Understanding bootstrap: https://medium.com/wdstack/bootstrap-equal-height-columns-d07bc934eb27
+              also see here: https://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all-the-same-height#comment56504018_19695851
+              https://stackoverflow.com/questions/20456694/grid-of-responsive-squares
+              https://stackoverflow.com/a/49692667/4880924
+              Adding a display flex will change the height stretchability of the item: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox i.e.  If some items are taller than others, all items will stretch along the cross axis to fill its full size.
+          (5) do testing in elm
+          (7) Increase the font size of the buttons.
+          (8) add like and subscribe buttons
+          (9) add a celebration if you win.
 
 
-You should avoid using withDefault until you reach a point in your code where you can actually handle the Nothing case in a useful way.
-    Don't withDefault to a nonsense value that you check for later. (This is a common newbie mistake when using Maybe)
+   https://package.elm-lang.org/packages/elm/core/latest/Maybe#map
+                 f x =
+     let
+       result = Maybe.map (\v -> 3.14 > v) x
+     in
+       Maybe.withDefault False result
+
+
+   You should avoid using withDefault until you reach a point in your code where you can actually handle the Nothing case in a useful way.
+       Don't withDefault to a nonsense value that you check for later. (This is a common newbie mistake when using Maybe)
 
 -}
 ---- MODEL ----
@@ -58,20 +59,28 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { timer = 0, gameState = NotStarted, currentNumber = 0, 
-          numbers = [], fastestTime = Nothing, currentlyPressedNumber = -1, gifState = Failure }
+    { timer = 0
+    , gameState = NotStarted
+    , currentNumber = 0
+    , numbers = []
+    , fastestTime = Nothing
+    , currentlyPressedNumber = -1
+    , gifState = Failure
+    }
 
 
 init : Maybe Float -> ( Model, Cmd Msg )
 init flags =
     case flags of
         Nothing ->
-            ( { initialModel | fastestTime = Nothing }, 
-                   Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
+            ( { initialModel | fastestTime = Nothing }
+            , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
+            )
 
         Just fastestTime ->
-            ( { initialModel | fastestTime = Just fastestTime }, 
-                   Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
+            ( { initialModel | fastestTime = Just fastestTime }
+            , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
+            )
 
 
 
@@ -87,7 +96,10 @@ endingNumber : Int
 endingNumber =
     30
 
+
+
 ---- UPDATE ----
+
 
 type Msg
     = NoOp
@@ -98,7 +110,7 @@ type Msg
     | GotGif (Result Http.Error String)
 
 
-type GifState 
+type GifState
     = Failure
     | Loading
     | Success String
@@ -120,14 +132,16 @@ update msg model =
             ( { model | timer = model.timer + 1.0 }, Cmd.none )
 
         ResetGame ->
-            ( { initialModel | fastestTime = model.fastestTime },
-             Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))  )
+            ( { initialModel | fastestTime = model.fastestTime }
+            , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
+            )
 
         NumberPress pressedNumber ->
             let
                 theNextCorrectNumber =
                     if pressedNumber == (model.currentNumber + 1) then
                         model.currentNumber + 1
+
                     else
                         model.currentNumber
 
@@ -141,39 +155,56 @@ update msg model =
                     else
                         model.gameState
 
-                youHaveaNewRecord fastestTime = (model.timer / 10 ) < fastestTime 
-
+                youHaveaNewRecord fastestTime =
+                    (model.timer / 10) < fastestTime
             in
             case model.fastestTime of
                 Just fastestTime ->
                     if theNewGameState == End then
-                        if youHaveaNewRecord (fastestTime) then
-                           ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber,
-                                gameState = theNewGameState, fastestTime =  Just (model.timer / 10) }, 
-                                      Cmd.batch [cacheScore (model.timer / 10), getRandomGif "victory"] )
+                        if youHaveaNewRecord fastestTime then
+                            ( { model
+                                | currentlyPressedNumber = pressedNumber
+                                , currentNumber = theNextCorrectNumber
+                                , gameState = theNewGameState
+                                , fastestTime = Just (model.timer / 10)
+                              }
+                            , Cmd.batch [ cacheScore (model.timer / 10), getRandomGif "victory" ]
+                            )
+
                         else if (model.timer / 10) < 30 then
-                            ( { model | currentlyPressedNumber = pressedNumber,
-                                 currentNumber = theNextCorrectNumber, gameState = theNewGameState }, getRandomGif "winner" )                        
+                            ( { model
+                                | currentlyPressedNumber = pressedNumber
+                                , currentNumber = theNextCorrectNumber
+                                , gameState = theNewGameState
+                              }
+                            , getRandomGif "winner"
+                            )
+
                         else
-                            ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber, gameState = theNewGameState }, 
-                                getRandomGif "loser" )
-                    else                        
-                        ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
+                            ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }
+                            , getRandomGif "loser"
+                            )
+
+                    else
+                        ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
+
                 Nothing ->
                     if theNewGameState == End then
-                        ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber, gameState = theNewGameState, fastestTime = Just (model.timer / 10) }, Cmd.batch [cacheScore (model.timer / 10), getRandomGif "victory"]  )
+                        ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState, fastestTime = Just (model.timer / 10) }, Cmd.batch [ cacheScore (model.timer / 10), getRandomGif "victory" ] )
+
                     else
-                        ( { model | currentlyPressedNumber = pressedNumber , currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )            
+                        ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
 
         RandomizeNumbers numbers ->
             ( { model | numbers = numbers }, Cmd.none )
-        
+
         GotGif result ->
-               case result of
-                 Ok url ->
-                   ({model | gifState = Success url}, Cmd.none)
-                 Err _ ->
-                   ({model | gifState = Failure}, Cmd.none)
+            case result of
+                Ok url ->
+                    ( { model | gifState = Success url }, Cmd.none )
+
+                Err _ ->
+                    ( { model | gifState = Failure }, Cmd.none )
 
 
 
@@ -200,59 +231,65 @@ view model =
         , timer model
         , resetButton model
         , encouragement model
-        , recordTime model               
+        , recordTime model
         ]
+
 
 encouragement : Model -> Html Msg
 encouragement model =
     let
-        showappropriateGif = case model.gifState of
-                                Success url ->
-                                    img [src url] []
-                                _ -> 
-                                    div [] []
+        showappropriateGif =
+            case model.gifState of
+                Success url ->
+                    img [ src url ] []
 
+                _ ->
+                    div [] []
 
-        winning =  div [ class "col-12" ]
-                       [text "Wow! That's a new record! Take a screenshot as proof and see if your friends can beat this?"
-                       , div []
-                         [showappropriateGif]
-                       ]
+        winning =
+            div [ class "col-12" ]
+                [ text "Wow! That's a new record! Take a screenshot as proof and see if your friends can beat this?"
+                , div []
+                    [ showappropriateGif ]
+                ]
 
         encouragingWords =
-            if model.gameState == End then                
-                    case model.fastestTime of
-                        Nothing ->
-                           winning
-                           
-                        Just fastestTime ->
-                           if model.timer / 10 == fastestTime || model.timer / 10 < fastestTime then                
-                               winning
-                           else if model.timer / 10 < 30 then
-                             div [ class "col-12" ]
-                                [text "Nice time! How does it compare with your friends' times? Screenshot + send to them?"
-                                , div []
-                                      [showappropriateGif]
-                                ]
-                           else
+            if model.gameState == End then
+                case model.fastestTime of
+                    Nothing ->
+                        winning
+
+                    Just fastestTime ->
+                        if model.timer / 10 == fastestTime || model.timer / 10 < fastestTime then
+                            winning
+
+                        else if model.timer / 10 < 30 then
                             div [ class "col-12" ]
-                                [text "Try again for a faster time?"
+                                [ text "Nice time! How does it compare with your friends' times? Screenshot + send to them?"
                                 , div []
-                                      [showappropriateGif]
+                                    [ showappropriateGif ]
                                 ]
+
+                        else
+                            div [ class "col-12" ]
+                                [ text "Try again for a faster time?"
+                                , div []
+                                    [ showappropriateGif ]
+                                ]
+
             else
                 text ""
     in
     div [ class "row" ]
         [ hr [] []
-        , encouragingWords 
+        , encouragingWords
         ]
 
 
 resetButton : Model -> Html Msg
 resetButton model =
     div [ class "row" ]
-        [ br [ class "row" ] []        
+        [ br [ class "row" ] []
         , if model.gameState /= NotStarted then
             button [ class "col-12 btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
 
@@ -265,7 +302,7 @@ instructions : Html Msg
 instructions =
     div [ class "row" ]
         [ h1 [ class "col-12" ] [ text "The Number Game:" ]
-        , p [ class "col-12" ] [ text ("Click from 1 through to " ++ String.fromInt endingNumber ++ " as fast as you can!") ]        
+        , p [ class "col-12" ] [ text ("Click from 1 through to " ++ String.fromInt endingNumber ++ " as fast as you can!") ]
         ]
 
 
@@ -280,17 +317,18 @@ timer model =
                 timerString ++ ".0"
 
             else
-                timerString        
+                timerString
     in
-    div [] [ h1 [] [ text ("Timer: " ++ formattedTimerString)]
-           ]
+    div []
+        [ h1 [] [ text ("Timer: " ++ formattedTimerString) ]
+        ]
 
 
 recordTime : Model -> Html Msg
 recordTime model =
     let
         timerString time =
-            String.fromFloat (time)
+            String.fromFloat time
 
         formattedTimerString time =
             if not (String.contains "." (timerString time)) then
@@ -299,18 +337,24 @@ recordTime model =
             else
                 timerString time
 
-        fastestTimeComment = case model.fastestTime of
-                        Nothing ->
-                            ""
-                        Just fastestTime ->                      
-                         "(Record: " ++ (formattedTimerString fastestTime) ++ ")"
+        fastestTimeComment =
+            case model.fastestTime of
+                Nothing ->
+                    ""
+
+                Just fastestTime ->
+                    "(Record: " ++ formattedTimerString fastestTime ++ ")"
     in
-    div [] [ h1 [] [text fastestTimeComment]
-           , small [class "form-text text-muted"] [ text "Can you go sub 12 seconds? (It's possible with practice!) "]
-           ]
+    div []
+        [ h1 [] [ text fastestTimeComment ]
+        , small [ class "form-text text-muted" ] [ text "Can you go sub 12 seconds?" ]
+        ]
+
 
 
 -- small [class "form-text text-muted"] [ text "Can you go sub 15 seconds?"]
+
+
 split : Int -> List a -> List (List a)
 split i list =
     case take i list of
@@ -346,6 +390,7 @@ showButton model buttonNumber =
 
             else if model.currentlyPressedNumber /= model.currentNumber && buttonNumber == model.currentlyPressedNumber then
                 "btn-block border-dark game-btn btn btn-danger"
+
             else
                 "btn-block border-dark game-btn btn btn-light"
 
@@ -377,36 +422,38 @@ main =
         , subscriptions = subscriptions
         }
 
+
+
 ----- HTTP
 {-
 
-    the number counter one:
-API key: sd2CNhUjDfoQqLTH0nlL3Uf2YwHRHoyq
+       the number counter one:
+   API key: sd2CNhUjDfoQqLTH0nlL3Uf2YwHRHoyq
 
 
 
-the test one:
-    PntiBxszYGgYpLyu3SfoFaTvpG3wEoRB
+   the test one:
+       PntiBxszYGgYpLyu3SfoFaTvpG3wEoRB
 
 -}
-
-
-
 ---- HTTP
+
 
 getRandomGif : String -> Cmd Msg
 getRandomGif gifType =
-  Http.get
-    { url = "https://api.giphy.com/v1/gifs/random?rating=g&api_key=sd2CNhUjDfoQqLTH0nlL3Uf2YwHRHoyq&tag=" ++ gifType
-    , expect = Http.expectJson GotGif gifDecoder
-    }
+    Http.get
+        { url = "https://api.giphy.com/v1/gifs/random?rating=g&api_key=sd2CNhUjDfoQqLTH0nlL3Uf2YwHRHoyq&tag=" ++ gifType
+        , expect = Http.expectJson GotGif gifDecoder
+        }
 
 
 gifDecoder : Decoder String
 gifDecoder =
-  field "data" (field "image_url" string)
+    field "data" (field "image_url" string)
+
 
 
 ---- Ports -----
-port cacheScore : Float-> Cmd msg
 
+
+port cacheScore : Float -> Cmd msg
