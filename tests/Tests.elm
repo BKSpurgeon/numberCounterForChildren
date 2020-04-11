@@ -5,7 +5,7 @@ import Expect
 
 
 -- Check out http://package.elm-lang.org/packages/elm-community/elm-test/latest to learn more about testing in Elm!
-
+-- https://elmprogramming.com/easy-to-test.html
 
 all : Test
 all =
