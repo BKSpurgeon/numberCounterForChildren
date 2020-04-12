@@ -280,9 +280,10 @@ encouragement model =
             else
                 text ""
     in
-    div [ class "row" ]
-        [ hr [] []
+    div [  ]
+        [ br [] []
         , encouragingWords
+        , br [] []
         ]
 
 
