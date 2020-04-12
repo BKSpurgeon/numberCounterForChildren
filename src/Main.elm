@@ -348,7 +348,11 @@ recordTime model =
     in
     div []
         [ h1 [] [ text fastestTimeComment ]
-        , small [ class "form-text text-muted" ] [ text "Can you go sub 12 seconds?" ]
+        , 
+        if model.gameState /= End then
+           small [ class "form-text text-muted" ] [ text "Can you go lower?" ]
+        else
+           text ""
         ]
 
 
