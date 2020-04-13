@@ -14,38 +14,6 @@ import Random.List exposing (shuffle)
 import Time
 
 
-
-{-
-      To do:
-
-          (2) Master piping operations. |> and <| till you are completely comfortable with it.
-          (4) Fix the layout: we'd like everything a little more square
-              Understanding bootstrap: https://medium.com/wdstack/bootstrap-equal-height-columns-d07bc934eb27
-              also see here: https://stackoverflow.com/questions/19695784/how-can-i-make-bootstrap-columns-all-the-same-height#comment56504018_19695851
-              https://stackoverflow.com/questions/20456694/grid-of-responsive-squares
-              https://stackoverflow.com/a/49692667/4880924
-              Adding a display flex will change the height stretchability of the item: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox i.e.  If some items are taller than others, all items will stretch along the cross axis to fill its full size.
-          (5) do testing in elm
-          (7) Increase the font size of the buttons.
-          (8) add like and subscribe buttons
-          (9) add a celebration if you win.
-
-
-   https://package.elm-lang.org/packages/elm/core/latest/Maybe#map
-                 f x =
-     let
-       result = Maybe.map (\v -> 3.14 > v) x
-     in
-       Maybe.withDefault False result
-
-
-   You should avoid using withDefault until you reach a point in your code where you can actually handle the Nothing case in a useful way.
-       Don't withDefault to a nonsense value that you check for later. (This is a common newbie mistake when using Maybe)
-
--}
----- MODEL ----
-
-
 type alias Model =
     { timer : Float
     , gameState : GameState
@@ -426,22 +394,6 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
-
-
-
------ HTTP
-{-
-
-       the number counter one:
-   API key: sd2CNhUjDfoQqLTH0nlL3Uf2YwHRHoyq
-
-
-
-   the test one:
-       PntiBxszYGgYpLyu3SfoFaTvpG3wEoRB
-
--}
----- HTTP
 
 
 getRandomGif : String -> Cmd Msg
