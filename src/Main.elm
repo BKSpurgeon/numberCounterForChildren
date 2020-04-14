@@ -22,6 +22,7 @@ type alias Model =
     , fastestTime : Maybe Float
     , currentlyPressedNumber : Int
     , gifState : GifState
+    , gameMode: GameMode
     }
 
 
@@ -34,6 +35,7 @@ initialModel =
     , fastestTime = Nothing
     , currentlyPressedNumber = -1
     , gifState = Failure
+    , gameMode = Play
     }
 
 
@@ -76,6 +78,7 @@ type Msg
     | NumberPress Int
     | RandomizeNumbers (List Int)
     | GotGif (Result Http.Error String)
+    | SetBenchmark
 
 
 type GifState
@@ -89,6 +92,10 @@ type GameState
     | Running
     | End
 
+
+type GameMode
+    = Benchmark
+    | Play
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -173,6 +180,9 @@ update msg model =
 
                 Err _ ->
                     ( { model | gifState = Failure }, Cmd.none )
+        SetBenchmark ->
+            ( { model | gameMode = Benchmark }, Cmd.none )
+
 
 
 
@@ -233,7 +243,7 @@ encouragement model =
 
                         else if model.timer / 10 < 30 then
                             div [ class "col-12" ]
-                                [ text "Nice time! How does it compare with your friends' times? Screenshot + send to them?"
+                                [ text "Nice time!"
                                 , div []
                                     [ showappropriateGif ]
                                 ]
@@ -249,22 +259,20 @@ encouragement model =
                 text ""
     in
     div [  ]
-        [ br [] []
-        , encouragingWords
-        , br [] []
-        ]
+        [ encouragingWords]
 
 
 resetButton : Model -> Html Msg
 resetButton model =
-    div [ class "row" ]
-        [ br [ class "row" ] []
-        , if model.gameState /= NotStarted then
-            button [ class "col-12 btn btn-primary", onClick ResetGame ] [ text "Reset Game" ]
+        if model.gameMode /= Benchmark then
+           div [] 
+               [ button [ class "btn btn-info btn-block", onClick SetBenchmark ] [ text "Benchmark me!" ]
+               , small [ class "form-text text-muted" ] [ text "Test how fast you can go: set a benchmark with all the answers shown!" ]
+               ]           
+        else
+           button [ class "btn btn-primary btn-block", onClick ResetGame ] [ text "Reset Game!" ]
 
-          else
-            text ""
-        ]
+    
 
 
 instructions : Html Msg
@@ -288,9 +296,15 @@ timer model =
             else
                 timerString
     in
-    div []
-        [ h1 [] [ text ("Timer: " ++ formattedTimerString) ]
-        ]
+    case model.gameMode of 
+        Benchmark ->
+            div []
+            [ h1 [class "alert alert-info"] [ text ("Benchmark Game Play Mode - Timer: " ++ formattedTimerString) ]
+            ]
+        _ -> 
+            div []
+            [ h1 [] [ text ("Timer: " ++ formattedTimerString) ]
+            ]
 
 
 recordTime : Model -> Html Msg
@@ -314,13 +328,10 @@ recordTime model =
                 Just fastestTime ->
                     "(Record: " ++ formattedTimerString fastestTime ++ ")"
     in
+
     div []
-        [ h1 [] [ text fastestTimeComment ]
-        , 
-        if model.gameState /= End then
-           small [ class "form-text text-muted" ] [ text "Can you go lower?" ]
-        else
-           text ""
+        [ h1 [] [ text fastestTimeComment ]   
+       
         ]
 
 
@@ -351,32 +362,50 @@ showButtonRow model list =
 showButton : Model -> Int -> Html Msg
 showButton model buttonNumber =
     let
+        thisIsThefirstButtonToBePressed = 
+            buttonNumber == startingNumber && model.currentNumber == 0
+
+        buttonHasAlreadyBeenPressed = 
+            buttonNumber < model.currentNumber
+
+        theUserPressesTheWrongButton = 
+            model.currentlyPressedNumber /= model.currentNumber && buttonNumber == model.currentlyPressedNumber
+
         highlightCurrentButton =
             if buttonNumber == model.currentNumber then
                 "btn-block border-dark game-btn btn btn-success"
 
-            else if buttonNumber == startingNumber && model.currentNumber == 0 then
+            else if thisIsThefirstButtonToBePressed then
                 "btn-block border-dark game-btn btn btn-success"
 
-            else if buttonNumber < model.currentNumber then
+            else if buttonHasAlreadyBeenPressed then
                 "btn-block border-dark game-btn btn btn-secondary"
 
-            else if model.currentlyPressedNumber /= model.currentNumber && buttonNumber == model.currentlyPressedNumber then
+            else if theUserPressesTheWrongButton then
                 "btn-block border-dark game-btn btn btn-danger"
 
             else
-                "btn-block border-dark game-btn btn btn-light"
+                case model.gameMode of
+                    Benchmark ->
+                       if buttonNumber == model.currentNumber + 1 then
+                        "btn-block border-dark game-btn btn btn-primary"
+                       else
+                          "btn-block border-dark game-btn btn btn-light"                                               
+
+                    _ -> "btn-block border-dark game-btn btn btn-light"
 
         obfuscateButtonNumber =
-            if model.gameState == NotStarted then
-                if buttonNumber /= 1 then
-                    " x "
-
-                else
-                    "1"
-
-            else
-                String.fromInt buttonNumber
+            case model.gameMode of
+                Benchmark ->
+                    String.fromInt buttonNumber
+                _ ->
+                    if model.gameState == NotStarted then
+                      if buttonNumber /= 1 then
+                        " x "
+                      else
+                      "1"
+                    else
+                      String.fromInt buttonNumber
     in
     div [ class "col-2 d-flex justify-content-center align-items-center" ]
         [ button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text obfuscateButtonNumber ] ]
@@ -414,3 +443,6 @@ gifDecoder =
 
 
 port cacheScore : Float -> Cmd msg
+
+
+

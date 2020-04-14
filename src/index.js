@@ -20,4 +20,5 @@ app.ports.cacheScore.subscribe(function(data) {
   localStorage.setItem('cache', JSON.stringify(data));
 });
 
+
 registerServiceWorker();
