@@ -4,9 +4,7 @@
 
 ### How to set up:
 
-[Download this:](https://github.com/halfzebra/create-elm-app)
-
-Then run `elm-app start` in the root directory of the project.
+[Download this:](https://github.com/halfzebra/create-elm-app) and then run `elm-app start` in the root directory of the project. It should handle all the tricky stuff pertaining to webpack and hot rodding for you.
 
 ### Analyzer
 
