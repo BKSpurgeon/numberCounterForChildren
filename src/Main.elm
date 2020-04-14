@@ -132,7 +132,7 @@ update msg model =
 
                 youHaveaNewRecord fastestTime =
                     (model.timer / 10) < fastestTime
-            in
+            in            
             case model.fastestTime of
                 Just fastestTime ->
                     if theNewGameState == End then
@@ -166,8 +166,7 @@ update msg model =
                 Nothing ->
                     if theNewGameState == End then
                         ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState, fastestTime = Just (model.timer / 10) }, Cmd.batch [ cacheScore (model.timer / 10), getRandomGif "victory" ] )
-
-                    else
+                    else  -- the game continues on: people are still playing
                         ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
 
         RandomizeNumbers numbers ->
@@ -444,5 +443,6 @@ gifDecoder =
 
 port cacheScore : Float -> Cmd msg
 
+port cacheBenchmark : Float -> Cmd msg -- we need to use this port otherwise dead code elimination will cut it!
 
 

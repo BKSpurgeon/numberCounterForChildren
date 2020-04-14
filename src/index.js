@@ -21,4 +21,10 @@ app.ports.cacheScore.subscribe(function(data) {
 });
 
 
+app.ports.cacheBenchmark.subscribe(function(data) {
+  localStorage.setItem('benchmark', JSON.stringify(data));
+});
+
+
+
 registerServiceWorker();
