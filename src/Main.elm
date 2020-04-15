@@ -13,6 +13,13 @@ import Random.List exposing (shuffle)
 import Time
 
 
+{-
+to do:
+    (1) Fix bug: When we run in the benchmark mode, with no initial benchmark times, then
+    the benchmark time isn't set, but rather a cache record time is set.
+    (2) Fix the logic and structure to make it clearer.
+-}
+
 type alias Model =
     { timer : Float
     , gameState : GameState
@@ -55,7 +62,7 @@ init flags =
             )
 
         Ok startingValue ->
-            ( { initialModel |  fastestTime = startingValue.fastestTime }
+            ( { initialModel |  fastestTime = startingValue.fastestTime, benchmarkTime = startingValue.benchmarkTime}
             , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
             )
 
@@ -483,8 +490,6 @@ startingValuesDecoder =
       (Json.Decode.maybe (field "startingBenchmark" float))
 
 ---- Ports -----
-
-
 
 
 port cacheScore : Float -> Cmd msg
