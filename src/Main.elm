@@ -39,15 +39,15 @@ initialModel =
     }
 
 
-init : Maybe Float -> ( Model, Cmd Msg )
+init : (Json.Decode.Value) -> ( Model, Cmd Msg )
 init flags =
-    case flags of
-        Nothing ->
+    case Json.Decode.Value startingValuesDecoder flags of
+        Err err ->
             ( { initialModel | fastestTime = Nothing }
             , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
             )
 
-        Just fastestTime ->
+        Ok startingValue ->
             ( { initialModel | fastestTime = Just fastestTime }
             , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
             )
@@ -414,7 +414,7 @@ showButton model buttonNumber =
 ---- PROGRAM ----
 
 
-main : Program (Maybe Float) Model Msg
+main : Program (Json.Decode.Value) Model Msg
 main =
     Browser.element
         { view = view
@@ -446,3 +446,4 @@ port cacheScore : Float -> Cmd msg
 port cacheBenchmark : Float -> Cmd msg -- we need to use this port otherwise dead code elimination will cut it!
 
 
+ 

@@ -3,14 +3,16 @@ import { Elm } from './Main.elm';
 import registerServiceWorker from './registerServiceWorker';
 
 
-var storedState = localStorage.getItem('cache');
-console.log("Retrieved state: ", storedState);
-var startingLowScore = storedState ? JSON.parse(storedState) : null;
+var storedScore = localStorage.getItem('cache');
+var startingLowScore = storedScore ? JSON.parse(storedScore) : null;
 
+
+var storedBenchmark = localStorage.getItem('benchmark');
+var startingBenchmark = storedBenchmark ? JSON.parse(storedBenchmark) : null;
 
 var app = Elm.Main.init({
   node: document.getElementById('root'),
-  flags: startingLowScore
+  flags: {startingLowScore: startingLowScore, startingBenchmark: startingBenchmark}
 });
 
 
