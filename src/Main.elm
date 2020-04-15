@@ -6,8 +6,7 @@ import Html exposing (Html, br, button, div, h1, hr, img, p, small, text)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
 import Http
-import Json.Decode exposing (Decoder, field, string)
-import Json.Encode as E
+import Json.Decode exposing (Decoder, field, string, Value, float, map2)
 import List exposing (..)
 import Random
 import Random.List exposing (shuffle)
@@ -20,6 +19,7 @@ type alias Model =
     , currentNumber : Int
     , numbers : List Int
     , fastestTime : Maybe Float
+    , benchmarkTime : Maybe Float
     , currentlyPressedNumber : Int
     , gifState : GifState
     , gameMode: GameMode
@@ -33,22 +33,29 @@ initialModel =
     , currentNumber = 0
     , numbers = []
     , fastestTime = Nothing
+    , benchmarkTime = Nothing
     , currentlyPressedNumber = -1
     , gifState = Failure
     , gameMode = Play
     }
 
 
+type alias StartingValues =
+    { fastestTime : Maybe Float
+    , benchmarkTime : Maybe Float
+    }
+
+
 init : (Json.Decode.Value) -> ( Model, Cmd Msg )
 init flags =
-    case Json.Decode.Value startingValuesDecoder flags of
+    case Json.Decode.decodeValue startingValuesDecoder flags of
         Err err ->
             ( { initialModel | fastestTime = Nothing }
             , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
             )
 
         Ok startingValue ->
-            ( { initialModel | fastestTime = Just fastestTime }
+            ( { initialModel |  fastestTime = startingValue.fastestTime }
             , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
             )
 
@@ -107,7 +114,7 @@ update msg model =
             ( { model | timer = model.timer + 1.0 }, Cmd.none )
 
         ResetGame ->
-            ( { initialModel | fastestTime = model.fastestTime }
+            ( initialModel  
             , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
             )
 
@@ -132,6 +139,18 @@ update msg model =
 
                 youHaveaNewRecord fastestTime =
                     (model.timer / 10) < fastestTime
+
+
+                updateBenchmarkIfRequired = 
+                    case model.benchmarkTime of
+                        Just benchmarkTime ->
+                            if youHaveaNewRecord benchmarkTime then
+                                cacheBenchmark (model.timer /10)
+                            else
+                                Cmd.none
+                        _ -> 
+                            Cmd.none                   
+
             in            
             case model.fastestTime of
                 Just fastestTime ->
@@ -160,7 +179,7 @@ update msg model =
                             , getRandomGif "loser"
                             )
 
-                    else
+                    else  -- the game continues on: people are still playing
                         ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
 
                 Nothing ->
@@ -180,7 +199,7 @@ update msg model =
                 Err _ ->
                     ( { model | gifState = Failure }, Cmd.none )
         SetBenchmark ->
-            ( { model | gameMode = Benchmark }, Cmd.none )
+            ( { initialModel | gameMode = Benchmark }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
 
 
 
@@ -263,13 +282,14 @@ encouragement model =
 
 resetButton : Model -> Html Msg
 resetButton model =
-        if model.gameMode /= Benchmark then
-           div [] 
-               [ button [ class "btn btn-info btn-block", onClick SetBenchmark ] [ text "Benchmark me!" ]
-               , small [ class "form-text text-muted" ] [ text "Test how fast you can go: set a benchmark with all the answers shown!" ]
+        
+           div [class "row"] 
+               [ button [ class "col-6 btn btn-info", onClick SetBenchmark ] [ text "Benchmark me!" ]               
+               , button [ class "col-6 btn btn-primary ", onClick ResetGame ] [ text "Reset Game!" ]                
+               , small [ class "col-6 form-text text-muted" ] [ text "Set a benchmark with all the answers shown!" ]
                ]           
-        else
-           button [ class "btn btn-primary btn-block", onClick ResetGame ] [ text "Reset Game!" ]
+        
+           
 
     
 
@@ -326,10 +346,18 @@ recordTime model =
 
                 Just fastestTime ->
                     "(Record: " ++ formattedTimerString fastestTime ++ ")"
+
+        fastestBenchmarkComment = 
+            case model.benchmarkTime of
+                Nothing ->
+                    ""
+
+                Just benchmarkTime ->
+                    "(Benchmark: " ++ formattedTimerString benchmarkTime ++ ")"        
     in
 
     div []
-        [ h1 [] [ text fastestTimeComment ]   
+        [ h1 [] [ text (fastestTimeComment ++ fastestBenchmarkComment) ]   
        
         ]
 
@@ -437,8 +465,15 @@ gifDecoder =
     field "data" (field "image_url" string)
 
 
+startingValuesDecoder : Decoder StartingValues
+startingValuesDecoder =
+    Json.Decode.map2 StartingValues
+      (Json.Decode.maybe (field "startingLowScore" float)) 
+      (Json.Decode.maybe (field "startingBenchmark" float))
 
 ---- Ports -----
+
+
 
 
 port cacheScore : Float -> Cmd msg
