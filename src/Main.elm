@@ -71,7 +71,7 @@ startingNumber =
 
 endingNumber : Int
 endingNumber =
-    30
+    3
 
 
 
@@ -114,7 +114,7 @@ update msg model =
             ( { model | timer = model.timer + 1.0 }, Cmd.none )
 
         ResetGame ->
-            ( initialModel  
+            ( {initialModel | fastestTime = model.fastestTime, benchmarkTime = model.benchmarkTime}
             , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
             )
 
@@ -155,29 +155,40 @@ update msg model =
             case model.fastestTime of
                 Just fastestTime ->
                     if theNewGameState == End then
-                        if youHaveaNewRecord fastestTime then
-                            ( { model
-                                | currentlyPressedNumber = pressedNumber
-                                , currentNumber = theNextCorrectNumber
-                                , gameState = theNewGameState
-                                , fastestTime = Just (model.timer / 10)
-                              }
-                            , Cmd.batch [ cacheScore (model.timer / 10), getRandomGif "victory" ]
-                            )
+                        case model.gameMode of
+                            Play ->
+                                if youHaveaNewRecord fastestTime then
+                                    ( { model
+                                        | currentlyPressedNumber = pressedNumber
+                                        , currentNumber = theNextCorrectNumber
+                                        , gameState = theNewGameState
+                                        , fastestTime = Just (model.timer / 10)
+                                      }
+                                    , Cmd.batch [ cacheScore (model.timer / 10), getRandomGif "victory" ]
+                                    )
 
-                        else if (model.timer / 10) < 30 then
-                            ( { model
-                                | currentlyPressedNumber = pressedNumber
-                                , currentNumber = theNextCorrectNumber
-                                , gameState = theNewGameState
-                              }
-                            , getRandomGif "winner"
-                            )
+                                else if (model.timer / 10) < 30 then
+                                    ( { model
+                                        | currentlyPressedNumber = pressedNumber
+                                        , currentNumber = theNextCorrectNumber
+                                        , gameState = theNewGameState
+                                      }
+                                    , getRandomGif "winner"
+                                    )
 
-                        else
-                            ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }
-                            , getRandomGif "loser"
-                            )
+                                else
+                                    ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }
+                                    , getRandomGif "nice try"
+                                    )
+                            Benchmark ->
+                                ( { model
+                                        | currentlyPressedNumber = pressedNumber
+                                        , currentNumber = theNextCorrectNumber
+                                        , gameState = theNewGameState
+                                        , benchmarkTime = Just (model.timer / 10)
+                                      }
+                                    , Cmd.batch [ updateBenchmarkIfRequired, getRandomGif "victory" ]
+                                    )
 
                     else  -- the game continues on: people are still playing
                         ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
@@ -199,7 +210,7 @@ update msg model =
                 Err _ ->
                     ( { model | gifState = Failure }, Cmd.none )
         SetBenchmark ->
-            ( { initialModel | gameMode = Benchmark }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
+            ( { initialModel | gameMode = Benchmark, benchmarkTime = model.benchmarkTime, fastestTime = model.fastestTime }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
 
 
 
