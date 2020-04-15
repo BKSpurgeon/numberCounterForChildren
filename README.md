@@ -14,4 +14,4 @@
 
 * I have hard coded my personal API key. If cloning, please do replace with your own.
 
-### License: MIT
+### License: GNU General Public License
