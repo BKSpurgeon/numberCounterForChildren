@@ -6,20 +6,11 @@ import Html exposing (Html, br, button, div, h1, hr, img, p, small, text)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
 import Http
-import Json.Decode exposing (Decoder, field, string, Value, float, map2)
+import Json.Decode exposing (Decoder, Value, field, float, map2, string)
 import List exposing (..)
 import Random
 import Random.List exposing (shuffle)
 import Time
-
-
-{-
-to do:
-    (1) Fix bug: When we run in the benchmark mode, with no initial benchmark times, then
-    the benchmark time isn't set, but rather a cache record time is set.
-    (2) Fix the logic and structure to make it clearer.
-    (3) when a benchmark record is set -- then we act like it's a real record set with the numbers given
--}
 
 type alias Model =
     { timer : Float
@@ -30,7 +21,7 @@ type alias Model =
     , benchmarkTime : Maybe Float
     , currentlyPressedNumber : Int
     , gifState : GifState
-    , gameMode: GameMode
+    , gameMode : GameMode
     }
 
 
@@ -54,7 +45,7 @@ type alias StartingValues =
     }
 
 
-init : (Json.Decode.Value) -> ( Model, Cmd Msg )
+init : Json.Decode.Value -> ( Model, Cmd Msg )
 init flags =
     case Json.Decode.decodeValue startingValuesDecoder flags of
         Err err ->
@@ -63,7 +54,7 @@ init flags =
             )
 
         Ok startingValue ->
-            ( { initialModel |  fastestTime = startingValue.fastestTime, benchmarkTime = startingValue.benchmarkTime}
+            ( { initialModel | fastestTime = startingValue.fastestTime, benchmarkTime = startingValue.benchmarkTime }
             , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
             )
 
@@ -112,6 +103,7 @@ type GameMode
     = Benchmark
     | Play
 
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -122,7 +114,7 @@ update msg model =
             ( { model | timer = model.timer + 1.0 }, Cmd.none )
 
         ResetGame ->
-            ( {initialModel | fastestTime = model.fastestTime, benchmarkTime = model.benchmarkTime}
+            ( { initialModel | fastestTime = model.fastestTime, benchmarkTime = model.benchmarkTime }
             , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
             )
 
@@ -145,109 +137,80 @@ update msg model =
                     else
                         model.gameState
 
-                youHaveaNewRecord fastestTime =
+                youHaveaNewRecordWhichIsA fastestTime =
                     (model.timer / 10) < fastestTime
 
-
-                updateBenchmarkIfRequired = 
-                    case model.benchmarkTime of
-                        Just benchmarkTime ->
-                            if youHaveaNewRecord benchmarkTime then
-                                cacheBenchmark (model.timer /10)
-                            else
-                                Cmd.none
-                        _ -> 
-                            cacheBenchmark (model.timer /10)    
-
-                updateBenchmarkTimeIfRequired = 
-                    case model.benchmarkTime of
-                        Just benchmarkTime ->
-                            if youHaveaNewRecord benchmarkTime then
-                                Just (model.timer /10)
-                            else
-                                Just benchmarkTime
-                        _ -> 
-                            Just (model.timer /10)
-
-
-            in            
+                updatedModel =
+                    { model
+                        | currentlyPressedNumber = pressedNumber
+                        , currentNumber = theNextCorrectNumber
+                        , gameState = theNewGameState                        
+                    }
+            in
             case model.fastestTime of
                 Just fastestTime ->
                     if theNewGameState == End then
                         case model.gameMode of
                             Play ->
-                                if youHaveaNewRecord fastestTime then
-                                    ( { model
-                                        | currentlyPressedNumber = pressedNumber
-                                        , currentNumber = theNextCorrectNumber
-                                        , gameState = theNewGameState
-                                        , fastestTime = Just (model.timer / 10)
-                                      }
+                                if youHaveaNewRecordWhichIsA fastestTime then
+                                    ( { updatedModel | fastestTime = Just (model.timer / 10) }
                                     , Cmd.batch [ cacheScore (model.timer / 10), getRandomGif "victory" ]
                                     )
 
                                 else if (model.timer / 10) < 30 then
-                                    ( { model
-                                        | currentlyPressedNumber = pressedNumber
-                                        , currentNumber = theNextCorrectNumber
-                                        , gameState = theNewGameState
-                                      }
-                                    , getRandomGif "winner"
-                                    )
+                                    -- the time is good, but meh:
+                                    ( updatedModel, getRandomGif "winner" )
 
                                 else
-                                    ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }
-                                    , getRandomGif "loser"
-                                    )
+                                    -- the time is terrible:
+                                    ( updatedModel, getRandomGif "loser" )
+
                             Benchmark ->
                                 case model.benchmarkTime of
                                     Just benchmarkTime ->
-                                        if youHaveaNewRecord benchmarkTime then
-                                            ( { model
-                                                    | currentlyPressedNumber = pressedNumber
-                                                    , currentNumber = theNextCorrectNumber
-                                                    , gameState = theNewGameState
-                                                    , benchmarkTime = Just (model.timer / 10)
-                                                  }
-                                                , Cmd.batch [ updateBenchmarkIfRequired, getRandomGif "victory" ]
-                                                )
-                                        else
-                                            ( { model
-                                                    | currentlyPressedNumber = pressedNumber
-                                                    , currentNumber = theNextCorrectNumber
-                                                    , gameState = theNewGameState                                                    
-                                                  }
-                                                , Cmd.batch [ updateBenchmarkIfRequired, getRandomGif "loser" ]
-                                                )
-                                    Nothing ->
-                                        ( { model
-                                                    | currentlyPressedNumber = pressedNumber
-                                                    , currentNumber = theNextCorrectNumber
-                                                    , gameState = theNewGameState
-                                                    , benchmarkTime = Just (model.timer / 10)
-                                                  }
-                                                , Cmd.batch [ updateBenchmarkIfRequired, getRandomGif "victory" ]
-                                                )
+                                        if youHaveaNewRecordWhichIsA benchmarkTime then
+                                            ( { updatedModel | benchmarkTime = Just (model.timer / 10) }
+                                            , Cmd.batch [ cacheBenchmark (model.timer / 10), getRandomGif "victory" ]
+                                            )
 
-                    else  -- the game continues on: people are still playing
-                        ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
+                                        else
+                                            ( updatedModel, getRandomGif "nice try" )
+
+                                    Nothing ->
+                                        -- there's no benchmark saved: so let's save it in the model
+                                        ( { updatedModel | benchmarkTime = Just (model.timer / 10) }
+                                        , Cmd.batch [ cacheBenchmark (model.timer / 10), getRandomGif "victory" ]
+                                        )
+
+                    else
+                        -- the game continues on: people are still playing
+                        ( updatedModel, Cmd.none )
 
                 Nothing ->
                     if theNewGameState == End then
                         case model.gameMode of
                             Benchmark ->
-                                 ( { model
-                                        | currentlyPressedNumber = pressedNumber
-                                        , currentNumber = theNextCorrectNumber
-                                        , gameState = theNewGameState
-                                        , benchmarkTime = updateBenchmarkTimeIfRequired
-                                      }
-                                    , Cmd.batch [ updateBenchmarkIfRequired, getRandomGif "victory" ]
-                                    )
+                                case model.benchmarkTime of
+                                    Just benchmarkTime ->
+                                        if youHaveaNewRecordWhichIsA benchmarkTime then
+                                            ( { updatedModel | benchmarkTime = Just (model.timer / 10) }
+                                            , Cmd.batch [ cacheBenchmark (model.timer / 10), getRandomGif "victory" ]
+                                            )
+
+                                        else
+                                            ( updatedModel, getRandomGif "victory" )
+                                    Nothing ->
+                                        ( { updatedModel | benchmarkTime = Just (model.timer / 10) }
+                                        , Cmd.batch [ cacheBenchmark (model.timer / 10), getRandomGif "victory" ]
+                                        )
+
                             Play ->
-                                   ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState, fastestTime = Just (model.timer / 10) }, Cmd.batch [ cacheScore (model.timer / 10), getRandomGif "victory" ] )
-                    else  -- the game continues on: people are still playing
-                        ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
+                                ( { updatedModel | fastestTime = Just (model.timer / 10) }
+                                , Cmd.batch [ cacheScore (model.timer / 10), getRandomGif "victory" ] )
+
+                    else
+                        -- the game continues on: people are still playing
+                        ( updatedModel, Cmd.none )
 
         RandomizeNumbers numbers ->
             ( { model | numbers = numbers }, Cmd.none )
@@ -259,9 +222,9 @@ update msg model =
 
                 Err _ ->
                     ( { model | gifState = Failure }, Cmd.none )
+
         SetBenchmark ->
             ( { initialModel | gameMode = Benchmark, benchmarkTime = model.benchmarkTime, fastestTime = model.fastestTime }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
-
 
 
 
@@ -286,7 +249,7 @@ view model =
         [ instructions
         , showButtons model
         , timer model
-        , resetButton model
+        , resetButtonAndBenchmarkButton model
         , encouragement model
         , recordTime model
         ]
@@ -308,7 +271,8 @@ encouragement model =
                 Benchmark ->
                     "Nice benchmark!"
 
-                _ -> "Wow! That's a new record! Take a screenshot as proof and see if your friends can beat this?"
+                _ ->
+                    "Wow! That's a new record! Take a screenshot as proof and see if your friends can beat this?"
 
         winning =
             div [ class "col-12" ]
@@ -322,65 +286,61 @@ encouragement model =
                 case model.gameMode of
                     Benchmark ->
                         case model.benchmarkTime of
-                           Just fastestBenchmarkTime ->
+                            Just fastestBenchmarkTime ->
                                 if model.timer / 10 == fastestBenchmarkTime || model.timer / 10 < fastestBenchmarkTime then
                                     winning
-                                else 
-                                    div [ class "col-12" ]
-                                        [ text "Try again for a faster time?"
-                                        , div []
-                                            [ showappropriateGif ]
-                                        ]
-                           Nothing -> 
+
+                                else
                                     div [ class "col-12" ]
                                         [ text "Try again for a faster time?"
                                         , div []
                                             [ showappropriateGif ]
                                         ]
 
+                            Nothing ->
+                                div [ class "col-12" ]
+                                    [ text "Try again for a faster time?"
+                                    , div []
+                                        [ showappropriateGif ]
+                                    ]
+
                     _ ->
-                        case model.fastestTime of                    
+                        case model.fastestTime of
                             Nothing ->
                                 winning
 
                             Just fastestTime ->
-                                
-                                            if model.timer / 10 == fastestTime || model.timer / 10 < fastestTime then
-                                                winning
+                                if model.timer / 10 == fastestTime || model.timer / 10 < fastestTime then
+                                    winning
 
-                                            else if model.timer / 10 < 30 then
-                                                div [ class "col-12" ]
-                                                    [ text "Nice time!"
-                                                    , div []
-                                                        [ showappropriateGif ]
-                                                    ]
+                                else if model.timer / 10 < 30 then
+                                    div [ class "col-12" ]
+                                        [ text "Nice time!"
+                                        , div []
+                                            [ showappropriateGif ]
+                                        ]
 
-                                            else
-                                                div [ class "col-12" ]
-                                                    [ text "Try again for a faster time?"
-                                                    , div []
-                                                        [ showappropriateGif ]
-                                                    ]
+                                else
+                                    div [ class "col-12" ]
+                                        [ text "Try again for a faster time?"
+                                        , div []
+                                            [ showappropriateGif ]
+                                        ]
 
             else
                 text ""
     in
-    div [  ]
-        [ encouragingWords]
+    div []
+        [ encouragingWords ]
 
 
-resetButton : Model -> Html Msg
-resetButton model =
-        
-           div [class "row"] 
-               [ button [ class "col-6 btn btn-info", onClick SetBenchmark ] [ text "Benchmark me!" ]               
-               , button [ class "col-6 btn btn-primary ", onClick ResetGame ] [ text "Reset Game!" ]                
-               , small [ class "col-6 form-text text-muted" ] [ text "Set a benchmark with all the answers shown!" ]
-               ]           
-        
-           
-
-    
+resetButtonAndBenchmarkButton : Model -> Html Msg
+resetButtonAndBenchmarkButton model =
+    div [ class "row" ]
+        [ button [ class "col-6 btn btn-info", onClick SetBenchmark ] [ text "Benchmark me!" ]
+        , button [ class "col-6 btn btn-primary ", onClick ResetGame ] [ text "Reset Game!" ]
+        , small [ class "col-6 form-text text-muted" ] [ text "Set a benchmark with all the answers shown!" ]
+        ]
 
 
 instructions : Html Msg
@@ -404,15 +364,16 @@ timer model =
             else
                 timerString
     in
-    case model.gameMode of 
+    case model.gameMode of
         Benchmark ->
             div []
-            [ h1 [class "alert alert-info"] [ text ("Benchmark Game Play Mode - Timer: " ++ formattedTimerString) ]
-            ]
-        _ -> 
+                [ h1 [ class "alert alert-info" ] [ text ("Benchmark Mode - Timer: " ++ formattedTimerString) ]
+                ]
+
+        _ ->
             div []
-            [ h1 [] [ text ("Timer: " ++ formattedTimerString) ]
-            ]
+                [ h1 [] [ text ("Timer: " ++ formattedTimerString) ]
+                ]
 
 
 recordTime : Model -> Html Msg
@@ -436,18 +397,16 @@ recordTime model =
                 Just fastestTime ->
                     "(Record: " ++ formattedTimerString fastestTime ++ ")"
 
-        fastestBenchmarkComment = 
+        fastestBenchmarkComment =
             case model.benchmarkTime of
                 Nothing ->
                     ""
 
                 Just benchmarkTime ->
-                    "(Benchmark: " ++ formattedTimerString benchmarkTime ++ ")"        
+                    "(Benchmark: " ++ formattedTimerString benchmarkTime ++ ")"
     in
-
     div []
-        [ h1 [] [ text (fastestTimeComment ++ fastestBenchmarkComment) ]   
-       
+        [ h1 [] [ text (fastestTimeComment ++ fastestBenchmarkComment) ]
         ]
 
 
@@ -478,13 +437,13 @@ showButtonRow model list =
 showButton : Model -> Int -> Html Msg
 showButton model buttonNumber =
     let
-        thisIsThefirstButtonToBePressed = 
+        thisIsThefirstButtonToBePressed =
             buttonNumber == startingNumber && model.currentNumber == 0
 
-        buttonHasAlreadyBeenPressed = 
+        buttonHasAlreadyBeenPressed =
             buttonNumber < model.currentNumber
 
-        theUserPressesTheWrongButton = 
+        theUserPressesTheWrongButton =
             model.currentlyPressedNumber /= model.currentNumber && buttonNumber == model.currentlyPressedNumber
 
         highlightCurrentButton =
@@ -503,25 +462,30 @@ showButton model buttonNumber =
             else
                 case model.gameMode of
                     Benchmark ->
-                       if buttonNumber == model.currentNumber + 1 then
-                        "btn-block border-dark game-btn btn btn-primary"
-                       else
-                          "btn-block border-dark game-btn btn btn-light"                                               
+                        if buttonNumber == model.currentNumber + 1 then
+                            "btn-block border-dark game-btn btn btn-primary"
 
-                    _ -> "btn-block border-dark game-btn btn btn-light"
+                        else
+                            "btn-block border-dark game-btn btn btn-light"
+
+                    _ ->
+                        "btn-block border-dark game-btn btn btn-light"
 
         obfuscateButtonNumber =
             case model.gameMode of
                 Benchmark ->
                     String.fromInt buttonNumber
+
                 _ ->
                     if model.gameState == NotStarted then
-                      if buttonNumber /= 1 then
-                        " x "
-                      else
-                      "1"
+                        if buttonNumber /= 1 then
+                            " x "
+
+                        else
+                            "1"
+
                     else
-                      String.fromInt buttonNumber
+                        String.fromInt buttonNumber
     in
     div [ class "col-2 d-flex justify-content-center align-items-center" ]
         [ button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text obfuscateButtonNumber ] ]
@@ -531,7 +495,7 @@ showButton model buttonNumber =
 ---- PROGRAM ----
 
 
-main : Program (Json.Decode.Value) Model Msg
+main : Program Json.Decode.Value Model Msg
 main =
     Browser.element
         { view = view
@@ -557,15 +521,17 @@ gifDecoder =
 startingValuesDecoder : Decoder StartingValues
 startingValuesDecoder =
     Json.Decode.map2 StartingValues
-      (Json.Decode.maybe (field "startingLowScore" float)) 
-      (Json.Decode.maybe (field "startingBenchmark" float))
+        (Json.Decode.maybe (field "startingLowScore" float))
+        (Json.Decode.maybe (field "startingBenchmark" float))
+
+
 
 ---- Ports -----
 
 
 port cacheScore : Float -> Cmd msg
 
-port cacheBenchmark : Float -> Cmd msg -- we need to use this port otherwise dead code elimination will cut it!
 
-
- 
+port cacheBenchmark :
+    Float
+    -> Cmd msg -- we need to use this port otherwise dead code elimination will cut it!
