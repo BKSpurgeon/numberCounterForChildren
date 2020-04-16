@@ -79,7 +79,7 @@ startingNumber =
 
 endingNumber : Int
 endingNumber =
-    3
+    30
 
 
 
