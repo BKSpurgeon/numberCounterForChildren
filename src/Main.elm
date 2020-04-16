@@ -18,6 +18,7 @@ to do:
     (1) Fix bug: When we run in the benchmark mode, with no initial benchmark times, then
     the benchmark time isn't set, but rather a cache record time is set.
     (2) Fix the logic and structure to make it clearer.
+    (3) when a benchmark record is set -- then we act like it's a real record set with the numbers given
 -}
 
 type alias Model =
@@ -156,7 +157,7 @@ update msg model =
                             else
                                 Cmd.none
                         _ -> 
-                            Cmd.none                   
+                            cacheBenchmark (model.timer /10)                   
 
             in            
             case model.fastestTime of
@@ -185,10 +186,47 @@ update msg model =
 
                                 else
                                     ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }
-                                    , getRandomGif "nice try"
+                                    , getRandomGif "loser"
                                     )
                             Benchmark ->
-                                ( { model
+                                case model.benchmarkTime of
+                                    Just benchmarkTime ->
+                                        if youHaveaNewRecord benchmarkTime then
+                                            ( { model
+                                                    | currentlyPressedNumber = pressedNumber
+                                                    , currentNumber = theNextCorrectNumber
+                                                    , gameState = theNewGameState
+                                                    , benchmarkTime = Just (model.timer / 10)
+                                                  }
+                                                , Cmd.batch [ updateBenchmarkIfRequired, getRandomGif "victory" ]
+                                                )
+                                        else
+                                            ( { model
+                                                    | currentlyPressedNumber = pressedNumber
+                                                    , currentNumber = theNextCorrectNumber
+                                                    , gameState = theNewGameState
+                                                    , benchmarkTime = Just (model.timer / 10)
+                                                  }
+                                                , Cmd.batch [ updateBenchmarkIfRequired, getRandomGif "loser" ]
+                                                )
+                                    Nothing ->
+                                        ( { model
+                                                    | currentlyPressedNumber = pressedNumber
+                                                    , currentNumber = theNextCorrectNumber
+                                                    , gameState = theNewGameState
+                                                    , benchmarkTime = Just (model.timer / 10)
+                                                  }
+                                                , Cmd.batch [ updateBenchmarkIfRequired, getRandomGif "victory" ]
+                                                )
+
+                    else  -- the game continues on: people are still playing
+                        ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
+
+                Nothing ->
+                    if theNewGameState == End then
+                        case model.gameMode of
+                            Benchmark ->
+                                 ( { model
                                         | currentlyPressedNumber = pressedNumber
                                         , currentNumber = theNextCorrectNumber
                                         , gameState = theNewGameState
@@ -197,12 +235,8 @@ update msg model =
                                     , Cmd.batch [ updateBenchmarkIfRequired, getRandomGif "victory" ]
                                     )
 
-                    else  -- the game continues on: people are still playing
-                        ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
-
-                Nothing ->
-                    if theNewGameState == End then
-                        ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState, fastestTime = Just (model.timer / 10) }, Cmd.batch [ cacheScore (model.timer / 10), getRandomGif "victory" ] )
+                            Play ->
+                                   ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState, fastestTime = Just (model.timer / 10) }, Cmd.batch [ cacheScore (model.timer / 10), getRandomGif "victory" ] )
                     else  -- the game continues on: people are still playing
                         ( { model | currentlyPressedNumber = pressedNumber, currentNumber = theNextCorrectNumber, gameState = theNewGameState }, Cmd.none )
 
@@ -260,36 +294,55 @@ encouragement model =
                 _ ->
                     div [] []
 
+        showAppropriateGameModeWinningMessage =
+            case model.gameMode of
+                Benchmark ->
+                    "Nice benchmark!"
+
+                _ -> "Wow! That's a new record! Take a screenshot as proof and see if your friends can beat this?"
+
         winning =
             div [ class "col-12" ]
-                [ text "Wow! That's a new record! Take a screenshot as proof and see if your friends can beat this?"
+                [ text showAppropriateGameModeWinningMessage
                 , div []
                     [ showappropriateGif ]
                 ]
 
         encouragingWords =
-            if model.gameState == End then
-                case model.fastestTime of
+            if model.gameState == End then                
+                case model.fastestTime of                    
                     Nothing ->
                         winning
 
                     Just fastestTime ->
-                        if model.timer / 10 == fastestTime || model.timer / 10 < fastestTime then
-                            winning
+                        case model.gameMode of
+                            Benchmark ->
+                                  if model.timer / 10 == fastestTime || model.timer / 10 < fastestTime then
+                                        winning
+                                  else 
+                                        div [ class "col-12" ]
+                                            [ text "Try again for a faster time?"
+                                            , div []
+                                                [ showappropriateGif ]
+                                            ]
 
-                        else if model.timer / 10 < 30 then
-                            div [ class "col-12" ]
-                                [ text "Nice time!"
-                                , div []
-                                    [ showappropriateGif ]
-                                ]
+                            _ ->
+                                    if model.timer / 10 == fastestTime || model.timer / 10 < fastestTime then
+                                        winning
 
-                        else
-                            div [ class "col-12" ]
-                                [ text "Try again for a faster time?"
-                                , div []
-                                    [ showappropriateGif ]
-                                ]
+                                    else if model.timer / 10 < 30 then
+                                        div [ class "col-12" ]
+                                            [ text "Nice time!"
+                                            , div []
+                                                [ showappropriateGif ]
+                                            ]
+
+                                    else
+                                        div [ class "col-12" ]
+                                            [ text "Try again for a faster time?"
+                                            , div []
+                                                [ showappropriateGif ]
+                                            ]
 
             else
                 text ""
