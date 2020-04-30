@@ -2,7 +2,7 @@ port module Main exposing (..)
 
 import Browser
 import Browser.Events exposing (onAnimationFrameDelta)
-import Html exposing (Html, br, button, div, h1, hr, img, p, small, text)
+import Html exposing (..)
 import Html.Attributes exposing (class, src)
 import Html.Events exposing (onClick)
 import Http
@@ -406,7 +406,7 @@ recordTime model =
                     "(Benchmark: " ++ formattedTimerString benchmarkTime ++ ")"
     in
     div []
-        [ h1 [] [ text (fastestTimeComment ++ fastestBenchmarkComment) ]
+        [ h4 [] [ text (fastestTimeComment ++ fastestBenchmarkComment) ]
         ]
 
 
