@@ -3,8 +3,8 @@ port module Main exposing (..)
 import Browser
 import Browser.Events exposing (onAnimationFrameDelta)
 import Html exposing (..)
-import Html.Attributes exposing (class, src)
-import Html.Events exposing (onClick)
+import Html.Attributes exposing (class, src, type_, value)
+import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (Decoder, Value, field, float, map2, string)
 import List exposing (..)
@@ -22,6 +22,7 @@ type alias Model =
     , currentlyPressedNumber : Int
     , gifState : GifState
     , gameMode : GameMode
+    , increment : Int
     }
 
 
@@ -36,6 +37,7 @@ initialModel =
     , currentlyPressedNumber = -1
     , gifState = Failure
     , gameMode = Play
+    , increment = 1
     }
 
 
@@ -50,12 +52,12 @@ init flags =
     case Json.Decode.decodeValue startingValuesDecoder flags of
         Err err ->
             ( { initialModel | fastestTime = Nothing }
-            , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
+            , Random.generate RandomizeNumbers (Random.List.shuffle (List.filter (\x -> (remainderBy initialModel.increment x) == 0) (range initialModel.increment (endingNumber initialModel.increment) )))
             )
 
         Ok startingValue ->
             ( { initialModel | fastestTime = startingValue.fastestTime, benchmarkTime = startingValue.benchmarkTime }
-            , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
+            , Random.generate RandomizeNumbers (Random.List.shuffle (List.filter (\x -> (remainderBy initialModel.increment x) == 0) (range initialModel.increment (endingNumber initialModel.increment) )))
             )
 
 
@@ -63,17 +65,13 @@ init flags =
 ---- Configuration ----
 
 
-startingNumber : Int
-startingNumber =
-    1
+endingNumber : Int -> Int
+endingNumber increment =
+    30 * increment
 
 
-endingNumber : Int
-endingNumber =
-    30
-
-
-
+totalNumbers : Int
+totalNumbers = 30
 ---- UPDATE ----
 
 
@@ -85,6 +83,7 @@ type Msg
     | RandomizeNumbers (List Int)
     | GotGif (Result Http.Error String)
     | SetBenchmark
+    | UpdateIncrement Int
 
 
 type GifState
@@ -114,24 +113,24 @@ update msg model =
             ( { model | timer = model.timer + 1.0 }, Cmd.none )
 
         ResetGame ->
-            ( { initialModel | fastestTime = model.fastestTime, benchmarkTime = model.benchmarkTime }
-            , Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber))
+            ( { initialModel | fastestTime = model.fastestTime, benchmarkTime = model.benchmarkTime, increment = model.increment }
+            , Random.generate RandomizeNumbers (Random.List.shuffle (List.filter (\x -> (remainderBy model.increment x) == 0) (range model.increment (endingNumber model.increment) )))
             )
 
         NumberPress pressedNumber ->
             let
                 theNextCorrectNumber =
-                    if pressedNumber == (model.currentNumber + 1) then
-                        model.currentNumber + 1
+                    if pressedNumber == (model.currentNumber + model.increment) then
+                        model.currentNumber + model.increment
 
                     else
                         model.currentNumber
 
                 theNewGameState =
-                    if model.gameState == NotStarted && pressedNumber == startingNumber then
+                    if model.gameState == NotStarted && pressedNumber == model.increment then
                         Running
 
-                    else if pressedNumber == endingNumber && model.currentNumber == (endingNumber - 1) then
+                    else if pressedNumber == (endingNumber model.increment) && model.currentNumber == ((endingNumber model.increment) - model.increment) then
                         End
 
                     else
@@ -224,8 +223,11 @@ update msg model =
                     ( { model | gifState = Failure }, Cmd.none )
 
         SetBenchmark ->
-            ( { initialModel | gameMode = Benchmark, benchmarkTime = model.benchmarkTime, fastestTime = model.fastestTime }, Random.generate RandomizeNumbers (Random.List.shuffle (range startingNumber endingNumber)) )
-
+            ( { initialModel | gameMode = Benchmark, benchmarkTime = model.benchmarkTime, fastestTime = model.fastestTime }, 
+                Random.generate RandomizeNumbers (Random.List.shuffle (List.filter (\x -> (remainderBy initialModel.increment x) == 0) (range initialModel.increment (endingNumber initialModel.increment) ))))
+        UpdateIncrement increment ->
+             update ResetGame  { model | increment =  increment}
+                
 
 
 ---- SUBSCRIPTIONS ----
@@ -246,13 +248,28 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ instructions
+        [ instructions model
         , showButtons model
         , timer model
         , resetButtonAndBenchmarkButton model
         , encouragement model
         , recordTime model
+        , setDifficulty model
         ]
+
+
+setDifficulty : Model -> Html Msg
+setDifficulty model =
+    div []
+    [ h3 [] [ text ("Set Difficulty " ++ (String.fromInt model.increment))]
+    ,   input
+      [ type_ "range"
+      , Html.Attributes.min "1"
+      , Html.Attributes.max "12"
+      , value <| String.fromInt model.increment
+      , onInput ((String.toInt >> Maybe.withDefault model.increment >> UpdateIncrement))
+      ] []    
+    ]
 
 
 encouragement : Model -> Html Msg
@@ -343,11 +360,11 @@ resetButtonAndBenchmarkButton model =
         ]
 
 
-instructions : Html Msg
-instructions =
+instructions : Model -> Html Msg
+instructions model =
     div [ class "row" ]
         [ h1 [ class "col-12" ] [ text "The Number Game:" ]
-        , p [ class "col-12" ] [ text ("Click from 1 through to " ++ String.fromInt endingNumber ++ " as fast as you can!") ]
+        , p [ class "col-12" ] [ text ("Click from 1 through to " ++ String.fromInt (endingNumber model.increment) ++ " (incrementing by  " ++ (String.fromInt model.increment) ++ ") " ++ " as fast as you can!") ]
         ]
 
 
@@ -406,7 +423,7 @@ recordTime model =
                     "(Benchmark: " ++ formattedTimerString benchmarkTime ++ ")"
     in
     div []
-        [ h4 [] [ text (fastestTimeComment ++ fastestBenchmarkComment) ]
+        [ p [] [ text (fastestTimeComment ++ fastestBenchmarkComment ++ "(Incrementing by: " ++ String.fromInt model.increment ++ ")" ) ]
         ]
 
 
@@ -438,7 +455,7 @@ showButton : Model -> Int -> Html Msg
 showButton model buttonNumber =
     let
         thisIsThefirstButtonToBePressed =
-            buttonNumber == startingNumber && model.currentNumber == 0
+            buttonNumber == model.increment && model.currentNumber == 0
 
         buttonHasAlreadyBeenPressed =
             buttonNumber < model.currentNumber
@@ -462,7 +479,7 @@ showButton model buttonNumber =
             else
                 case model.gameMode of
                     Benchmark ->
-                        if buttonNumber == model.currentNumber + 1 then
+                        if buttonNumber == model.currentNumber + model.increment then
                             "btn-block border-dark game-btn btn btn-primary"
 
                         else
@@ -488,7 +505,7 @@ showButton model buttonNumber =
                         String.fromInt buttonNumber
     in
     div [ class "col-2 d-flex justify-content-center align-items-center" ]
-        [ button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ text obfuscateButtonNumber ] ]
+        [ button [ class highlightCurrentButton, onClick (NumberPress buttonNumber) ] [ p [] [text obfuscateButtonNumber] ] ]
 
 
 
