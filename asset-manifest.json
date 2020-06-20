@@ -1,0 +1,18 @@
+{
+  "main.css": "/numberCounterForChildren/static/css/main.d89a71cf.chunk.css",
+  "main.js": "/numberCounterForChildren/static/js/main.bced66d2.chunk.js",
+  "main.js.map": "/numberCounterForChildren/static/js/main.bced66d2.chunk.js.map",
+  "runtime~main.js": "/numberCounterForChildren/static/js/runtime~main.8a782161.js",
+  "runtime~main.js.map": "/numberCounterForChildren/static/js/runtime~main.8a782161.js.map",
+  "vendors~main.js": "/numberCounterForChildren/static/js/vendors~main.b9063112.chunk.js",
+  "vendors~main.js.map": "/numberCounterForChildren/static/js/vendors~main.b9063112.chunk.js.map",
+  "./service-worker.js": "/numberCounterForChildren/./service-worker.js",
+  "custom.css": "/numberCounterForChildren/custom.css",
+  "favicon.ico": "/numberCounterForChildren/favicon.ico",
+  "giphy.png": "/numberCounterForChildren/giphy.png",
+  "index.html": "/numberCounterForChildren/index.html",
+  "logo.png": "/numberCounterForChildren/logo.png",
+  "logo.svg": "/numberCounterForChildren/logo.svg",
+  "manifest.json": "/numberCounterForChildren/manifest.json",
+  "precache-manifest.2ae1c02962a8aba0f36da27f3497a0f0.js": "/numberCounterForChildren/precache-manifest.2ae1c02962a8aba0f36da27f3497a0f0.js"
+}
